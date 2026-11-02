@@ -1,0 +1,10 @@
+node_modules
+dist
+coverage
+release-artifacts
+*.tsbuildinfo
+*.log
+.DS_Store
+.env
+.loa.json
+opencli.json

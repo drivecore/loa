@@ -1,0 +1,103 @@
+import { writeFile } from 'node:fs/promises';
+import { getMedia, startMediaTask, waitForTaskCompletion } from '@landofassets/sdk';
+import { defineCommand } from 'yargs-file-commands';
+import { getOrgOption, getProjectOption } from '../../lib/args.ts';
+import { createClient } from '../../lib/client.ts';
+import { getCliDeps } from '../../lib/deps.ts';
+
+export const command = defineCommand({
+  command: 'thumbnail',
+  describe: 'Download asset thumbnail',
+  builder: (yargs) =>
+    yargs.options({
+      asset: {
+        type: 'string',
+        description: 'Asset name',
+        demandOption: true,
+      },
+      width: {
+        type: 'number',
+        description: 'Thumbnail width',
+      },
+      height: {
+        type: 'number',
+        description: 'Thumbnail height',
+      },
+      output: {
+        alias: 'o',
+        type: 'string',
+        description: 'Output file path (defaults to asset filename)',
+      },
+      ...getOrgOption(),
+      ...getProjectOption(),
+    }),
+  handler: async (argv) => {
+    const debugCliTasks = process.env.DEBUG_CLI_ASSET_TASKS === '1' || process.env.DEBUG_CLI_ASSET_TASKS === 'true';
+    const client = await createClient(getCliDeps(argv));
+
+    const params = {
+      orgName: argv.org,
+      projectName: argv.project,
+      assetName: argv.asset,
+    };
+    const start = await startMediaTask(client, {
+      params,
+      format: 'webp',
+      query: {
+        width: argv.width,
+        height: argv.height,
+        cache: false,
+      },
+    });
+    if (debugCliTasks) {
+      console.log('[cli assets thumbnail] startMediaTask', {
+        asset: argv.asset,
+        status: start.status,
+        taskId: start.taskId ?? null,
+      });
+    }
+    if (start.status === 'SUCCESS') {
+      if (debugCliTasks) {
+        console.log('[cli assets thumbnail] media ready without task wait');
+      }
+    } else if (start.status === 'FAILED') {
+      throw new Error('Thumbnail task failed before media could be prepared');
+    } else {
+      if (start.taskId == null) {
+        throw new Error(`Thumbnail task status ${start.status} did not include a taskId`);
+      }
+      if (debugCliTasks) {
+        console.log('[cli assets thumbnail] waiting for task completion', { taskId: start.taskId });
+      }
+      await waitForTaskCompletion(client, {
+        params: { orgName: argv.org, projectName: argv.project, taskId: start.taskId },
+        timeoutMs: 180_000,
+      });
+      if (debugCliTasks) {
+        console.log('[cli assets thumbnail] task completed', { taskId: start.taskId });
+      }
+    }
+
+    if (debugCliTasks) {
+      console.log('[cli assets thumbnail] fetching media', { asset: argv.asset, format: 'webp' });
+    }
+    const thumbnailData = await getMedia(
+      client,
+      {
+        params,
+        format: 'webp',
+        query: {
+          width: argv.width,
+          height: argv.height,
+        },
+      },
+      'stream',
+    );
+
+    const outputPath = argv.output ?? `${argv.asset}_thumbnail.png`;
+    if (debugCliTasks) {
+      console.log('[cli assets thumbnail] writing output', { outputPath });
+    }
+    await writeFile(outputPath, thumbnailData);
+  },
+});

@@ -1,0 +1,22 @@
+{
+  "$schema": "./node_modules/oxlint/configuration_schema.json",
+  "ignorePatterns": ["**/dist/**"],
+  "options": { "typeAware": true },
+  "categories": {
+    "correctness": "error",
+    "suspicious": "warn"
+  },
+  "plugins": ["eslint", "typescript", "oxc", "unicorn"],
+  "overrides": [
+    {
+      "files": ["**/*.test.ts"],
+      "plugins": ["eslint", "typescript", "oxc", "unicorn", "vitest"]
+    }
+  ],
+  "rules": {
+    "eslint/no-underscore-dangle": "off",
+    "typescript/no-unsafe-type-assertion": "off",
+    "eslint/no-unmodified-loop-condition": "off",
+    "eslint/no-unsafe-optional-chaining": "warn"
+  }
+}

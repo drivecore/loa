@@ -1,0 +1,33 @@
+import * as sdk from '@landofassets/sdk';
+import { defineCommand } from 'yargs-file-commands';
+import { formatOption, getOrgOption, getVisibilityOption, paginationOption } from '../../lib/args.ts';
+import { createClient } from '../../lib/client.ts';
+import { getCliDeps } from '../../lib/deps.ts';
+import { logOutput } from '../../lib/output.ts';
+
+export const command = defineCommand({
+  command: 'list',
+  describe: 'List projects',
+  builder: (yargs) =>
+    yargs.options({
+      ...getOrgOption(),
+      ...getVisibilityOption(),
+      ...paginationOption,
+      ...formatOption,
+    }),
+  handler: async (argv) => {
+    const deps = getCliDeps(argv);
+    const client = await createClient(deps);
+
+    const result = await sdk.listProjects(client, {
+      query: {
+        orgName: argv.org,
+        visibility: argv.visibility,
+        pageOffset: argv['page-offset'],
+        pageSize: argv['page-size'],
+      },
+    });
+
+    logOutput(result, argv.format, deps.logger);
+  },
+});
