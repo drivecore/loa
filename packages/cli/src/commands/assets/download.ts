@@ -118,7 +118,7 @@ export const command = defineCommand({
         'stream',
       );
       fileData = result.data;
-      filename = result.fileName ?? `${assetName}.${format}`;
+      filename = result.fileName ?? `${selected.name}.${format}`;
     } else {
       if (debugCliTasks) {
         console.log('[cli assets download] fetching original media', { asset: assetName });
@@ -129,7 +129,7 @@ export const command = defineCommand({
       });
       const result = await client.axios.get(url.toString(), { responseType: 'stream' });
       fileData = result.data as Readable;
-      filename = assetName;
+      filename = selected.name;
     }
 
     const outputPath = argv.output ?? filename;

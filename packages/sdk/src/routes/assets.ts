@@ -393,6 +393,7 @@ export const assetVersionResultSchema = z.object({
   thumbnailOid: z.string().nullable(),
   createdAt: z.iso.datetime(),
   createdByUserId: z.number().int().nullable(),
+  createdByUserName: z.string().nullable(),
   originalSize: z.number().int().nullable(),
 });
 export type AssetVersion = z.infer<typeof assetVersionResultSchema>;

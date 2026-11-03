@@ -1,3 +1,5 @@
+import { logOutput } from '../../lib/output.ts';
+import { formatOption } from '../../lib/args.ts';
 import { readFile } from 'node:fs/promises';
 import { basename } from 'node:path';
 import { assetVersionSchema, createAssetVersion, uploadFile } from '@landofassets/sdk';
@@ -13,12 +15,14 @@ export const command = defineCommand({
       asset: { type: 'string', demandOption: true, description: 'Asset name' },
       file: { type: 'string', demandOption: true, description: 'File to upload' },
       version: { type: 'string', description: 'Unused major.minor.patch version' },
+      ...formatOption,
       ...getOrgOption(),
       ...getProjectOption(),
     }),
   handler: async (argv) => {
     const version = argv.version === undefined ? undefined : assetVersionSchema.parse(argv.version);
-    const client = await createClient(getCliDeps(argv));
+    const deps = getCliDeps(argv);
+    const client = await createClient(deps);
     const params = { orgName: argv.org, projectName: argv.project, assetName: argv.asset };
     const uploadToken = await uploadFile(client, {
       params: { orgName: argv.org, projectName: argv.project },
@@ -26,6 +30,6 @@ export const command = defineCommand({
       filename: basename(argv.file),
     });
     const asset = await createAssetVersion(client, { params, body: { uploadToken, version } });
-    console.log(JSON.stringify(asset, null, 2));
+    logOutput(asset, argv.format, deps.logger);
   },
 });

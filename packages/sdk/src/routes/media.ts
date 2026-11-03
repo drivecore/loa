@@ -56,7 +56,7 @@ export const getMediaOriginalUrl = (
   client: ApiClient,
   props: { params: MediaParams; query?: MediaOriginalQuery },
 ): URL => {
-  const path = buildPath('/media/$orgName/$projectName/$assetName/original', props.params);
+  const path = buildPath('/media/$orgName/$projectName/$assetName/original', mediaParamsSchema.parse(props.params));
   return makeUrl(client.host, path, props.query);
 };
 
@@ -225,7 +225,10 @@ export const getMediaUrl = (client: ApiClient, props: MediaUrlProps): URL => {
       : props.format === 'fcstd' || props.format === 'iges' || props.format === 'step'
         ? 'cad'
         : 'image';
-  const path = buildPath(`/media/$orgName/$projectName/$assetName/${routeGroup}/${props.format}`, props.params);
+  const path = buildPath(
+    `/media/$orgName/$projectName/$assetName/${routeGroup}/${props.format}`,
+    mediaParamsSchema.parse(props.params),
+  );
   return makeUrl(client.host, path, props.query);
 };
 

@@ -162,3 +162,37 @@ describe('mediaTaskAcceptedSchema', () => {
     expect(() => mediaTaskAcceptedSchema.parse(body)).toThrow();
   });
 });
+
+describe('versioned media references', () => {
+  it('carries exact and automatic references through all media formats', () => {
+    for (const selector of ['1.2.3', '1.2', '1', 'latest']) {
+      const selected = { ...params, assetName: `my-asset@${selector}` };
+      expect(decodeURIComponent(getMediaOriginalUrl(client, { params: selected }).pathname)).toContain(
+        `my-asset@${selector}/original`,
+      );
+      for (const format of [
+        'webp',
+        'glb',
+        'usdz',
+        'blend',
+        'fbx',
+        'fcstd',
+        'iges',
+        'step',
+        'hdr',
+        'exr',
+        'ultrahdr',
+      ] as const) {
+        expect(decodeURIComponent(getMediaUrl(client, { params: selected, format }).pathname)).toContain(
+          `my-asset@${selector}/`,
+        );
+      }
+    }
+  });
+  it('rejects manual tags and malformed versions', () => {
+    for (const name of ['chair@custom', 'chair@01.2', 'chair@1.0.0-beta']) {
+      expect(() => getMediaOriginalUrl(client, { params: { ...params, assetName: name } })).toThrow();
+      expect(() => getMediaUrl(client, { params: { ...params, assetName: name }, format: 'glb' })).toThrow();
+    }
+  });
+});

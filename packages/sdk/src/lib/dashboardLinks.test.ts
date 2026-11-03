@@ -170,3 +170,11 @@ describe('dashboardLinks', () => {
     });
   });
 });
+
+it('supports semver selectors in asset dashboard links', () => {
+  for (const selector of ['1.2.3', '1.2', '1', 'latest']) {
+    expect(dashboardAssetLink({ orgName: 'org', projectName: 'project', assetName: `chair@${selector}` })).toBe(
+      `/org/project/assets/chair@${selector}`,
+    );
+  }
+});
