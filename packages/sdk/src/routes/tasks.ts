@@ -3,6 +3,8 @@ import * as z from 'zod';
 import type { ApiClient } from '../client.js';
 import { parseResult } from '../client.js';
 import { buildPath } from '../lib/buildPath.js';
+import type { SortingFromFields } from '../lib/list.js';
+import { createSortingOptionalSchema, listResultSchema, paginationOptionalSchema } from '../lib/list.js';
 import { projectParamsSchema } from '../lib/schemas.js';
 
 const taskRunStatusSchema = z.enum(['RUNNING', 'SUCCESS', 'FAILED']);
@@ -23,6 +25,8 @@ export const taskSchema = z.object({
   latestRunDuration: z.number().nullable().describe('Latest run duration in seconds'),
 });
 
+export type Task = z.infer<typeof taskSchema>;
+
 export const taskWithStatusAndResultsSchema = taskSchema.extend({
   latestRunResults: z.unknown().nullable().describe('Latest run results payload'),
 });
@@ -30,12 +34,52 @@ export const taskWithStatusAndResultsSchema = taskSchema.extend({
 export type TaskWithStatusAndResults = z.infer<typeof taskWithStatusAndResultsSchema>;
 
 export const getTaskParamsSchema = projectParamsSchema.extend({
-  taskId: z.coerce.number().int().describe('The task ID'),
+  taskId: z.coerce.number().int().positive().describe('The task ID'),
 });
 export type GetTaskParams = z.infer<typeof getTaskParamsSchema>;
 
 export const getTaskResultSchema = taskWithStatusAndResultsSchema;
 export type GetTaskResult = z.infer<typeof getTaskResultSchema>;
+
+export const listTasksSortFields = ['createdAt', 'taskType', 'runner', 'latestRunStatus'] as const;
+export const listTaskSortFields = listTasksSortFields;
+export const listTaskDefaultSort: SortingFromFields<typeof listTasksSortFields> = {
+  sortBy: 'createdAt',
+  sortDir: 'desc',
+};
+export type ListTaskSortField = (typeof listTasksSortFields)[number];
+
+export const listTasksQuerySchema = paginationOptionalSchema.merge(createSortingOptionalSchema(listTasksSortFields));
+export type ListTasksQuery = z.infer<typeof listTasksQuerySchema>;
+export const listTasksResultSchema = listResultSchema(taskSchema);
+export type ListTasksResult = z.infer<typeof listTasksResultSchema>;
+export type ListTasksProps = {
+  params: z.infer<typeof projectParamsSchema>;
+  query?: ListTasksQuery;
+};
+
+/** List tasks belonging to a project, with pagination and sorting. */
+export const listTasks = async (client: ApiClient, props: ListTasksProps): Promise<ListTasksResult> => {
+  const params = projectParamsSchema.parse(props.params);
+  const query = listTasksQuerySchema.parse(props.query ?? {});
+  const path = buildPath('/tasks/$orgName/$projectName', params);
+  const response = await client.axios.get(path, { params: query });
+  return parseResult(client, listTasksResultSchema, response.data);
+};
+
+export const resubmitTaskParamsSchema = getTaskParamsSchema;
+export type ResubmitTaskParams = z.infer<typeof resubmitTaskParamsSchema>;
+export const resubmitTaskResultSchema = z.strictObject({ success: z.literal(true) });
+export type ResubmitTaskResult = z.infer<typeof resubmitTaskResultSchema>;
+export type ResubmitTaskProps = { params: ResubmitTaskParams };
+
+/** Re-queue a task belonging to a project for execution. */
+export const resubmitTask = async (client: ApiClient, props: ResubmitTaskProps): Promise<ResubmitTaskResult> => {
+  const params = resubmitTaskParamsSchema.parse(props.params);
+  const path = buildPath('/tasks/$orgName/$projectName/$taskId/resubmit', params);
+  const response = await client.axios.post(path, {}, { headers: { 'Content-Type': 'application/json' } });
+  return parseResult(client, resubmitTaskResultSchema, response.data);
+};
 
 export const taskEventRunSchema = z.object({
   taskRunId: z.number().int(),
@@ -48,6 +92,8 @@ export const taskEventRunSchema = z.object({
   results: z.unknown().nullable().optional(),
   errors: z.string().nullable().optional(),
 });
+
+export type TaskEventRun = z.infer<typeof taskEventRunSchema>;
 
 export const taskEventQueuedDataSchema = z.object({
   taskId: z.number().int(),
@@ -76,6 +122,8 @@ export const taskEventDataSchemas = {
 } as const;
 
 export type TaskEventType = keyof typeof taskEventDataSchemas;
+
+export const taskEventTypeSchema = z.enum(Object.keys(taskEventDataSchemas) as [TaskEventType, ...TaskEventType[]]);
 
 export type TaskEvent = {
   [K in TaskEventType]: {
@@ -106,7 +154,8 @@ export type GetTaskProps = {
 };
 
 export const getTask = async (client: ApiClient, props: GetTaskProps): Promise<GetTaskResult> => {
-  const path = buildPath('/tasks/$orgName/$projectName/$taskId', props.params);
+  const params = getTaskParamsSchema.parse(props.params);
+  const path = buildPath('/tasks/$orgName/$projectName/$taskId', params);
   const response = await client.axios.get(path);
   return parseResult(client, taskWithStatusAndResultsSchema, response.data);
 };

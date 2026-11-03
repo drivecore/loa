@@ -209,3 +209,17 @@ loa assets download --org acme --project library --asset chair@latest --format g
 ```
 
 Creation defaults to `1.0.0` and accepts an explicit `--version`. Reads support exact, minor, major, and `latest` references. `latest` means the highest numeric version; uploads may be out of order. Existing versions cannot be overwritten. Each version retains its own thumbnail, uploader, and creation time. `assets update` edits metadata; `assets upload` publishes file versions.
+
+### Tasks
+
+Manage background jobs in a project. Organization and project can also come from `loa config set` defaults.
+
+```sh
+loa tasks list --org my-org --project my-project --page-size 20 --sort-by createdAt --sort-dir desc
+loa tasks get 123 --org my-org --project my-project
+loa tasks retry 123 --org my-org --project my-project
+```
+
+`list` supports `--page-offset` and `--page-size` (1–1000). `get` includes the latest run status and results; a null latest run status means the task has no run yet. `retry` re-queues an existing task and prints `{ "success": true }` when accepted; it does not wait for completion. IDs must be positive integers. All three commands support `--format json|yaml|csv`.
+
+For a personal backend, set `LOA_HOST=http://localhost:3001` and log in to that host before running commands. Tasks use the existing project permissions and authentication.
