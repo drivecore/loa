@@ -1,3 +1,4 @@
+import { versionSelectorPattern } from './semver.js';
 import { coreEntityNameRegex } from './schemas.js';
 
 // Comment hash allows alphanumeric IDs (e.g. numeric comment.id or string "test")
@@ -7,10 +8,10 @@ const commentHashRegex = '[a-zA-Z0-9][a-zA-Z0-9-]*';
 export const dashboardOrgLinkRegex = new RegExp(`^/${coreEntityNameRegex}$`);
 export const dashboardProjectLinkRegex = new RegExp(`^/${coreEntityNameRegex}/${coreEntityNameRegex}$`);
 export const dashboardAssetLinkRegex = new RegExp(
-  `^/${coreEntityNameRegex}/${coreEntityNameRegex}/assets/${coreEntityNameRegex}$`,
+  `^/${coreEntityNameRegex}/${coreEntityNameRegex}/assets/${coreEntityNameRegex}(?:@${versionSelectorPattern})?$`,
 );
 export const dashboardAssetCommentLinkRegex = new RegExp(
-  `^/${coreEntityNameRegex}/${coreEntityNameRegex}/assets/${coreEntityNameRegex}#comment-${commentHashRegex}$`,
+  `^/${coreEntityNameRegex}/${coreEntityNameRegex}/assets/${coreEntityNameRegex}(?:@${versionSelectorPattern})?#comment-${commentHashRegex}$`,
 );
 export const dashboardSettingsInvitesLinkRegex = /^\/settings\/invites$/;
 

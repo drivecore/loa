@@ -10,6 +10,7 @@ import {
   aiUsageSchema,
   assetNameSchema,
   assetParamsSchema,
+  assetReferenceParamsSchema,
   assetVisibilitySchema,
   booleanPropSchema,
   descriptionSchema,
@@ -17,6 +18,7 @@ import {
   projectNameSchema,
   projectParamsSchema,
 } from '../lib/schemas.js';
+import { assetVersionSchema } from '../lib/semver.js';
 import { ImageTransformOptionsSchema } from '../lib/types.js';
 
 /** Summary of a MATERIAL asset's MaterialX document, extracted on upload. */
@@ -57,6 +59,9 @@ export const assetSchema = z.object({
   width: z.number().nullable().optional(),
   height: z.number().nullable().optional(),
   depth: z.number().nullable().optional(),
+  version: assetVersionSchema,
+  latestVersion: assetVersionSchema,
+  versionId: z.number().int(),
   fileOid: z.string(),
   thumbnailOid: z.string().nullable().optional(),
   materialInfo: materialInfoSchema.optional(),
@@ -64,7 +69,7 @@ export const assetSchema = z.object({
 
 export type Asset = z.infer<typeof assetSchema>;
 
-export const getAssetThumbnailParamsSchema = assetParamsSchema;
+export const getAssetThumbnailParamsSchema = assetReferenceParamsSchema;
 
 export type GetAssetThumbnailParams = z.infer<typeof getAssetThumbnailParamsSchema>;
 
@@ -143,6 +148,7 @@ export const createAssetParamsSchema = projectParamsSchema;
 export type CreateAssetParams = z.infer<typeof createAssetParamsSchema>;
 
 export const createAssetBodySchema = z.strictObject({
+  version: assetVersionSchema.optional(),
   name: assetNameSchema.describe('The name of the asset'),
   description: descriptionSchema.optional().describe('Optional description of the asset'),
   type: z.enum(Enums.AssetType).describe('The type of asset'),
@@ -193,7 +199,7 @@ export const createAsset = async (client: ApiClient, props: CreateAssetProps): P
   return parseResult(client, assetSchema, response.data);
 };
 
-export const getAssetParamsSchema = assetParamsSchema;
+export const getAssetParamsSchema = assetReferenceParamsSchema;
 
 export type GetAssetParams = z.infer<typeof getAssetParamsSchema>;
 
@@ -243,6 +249,7 @@ export const updateAssetParamsSchema = assetParamsSchema;
 export type UpdateAssetParams = z.infer<typeof updateAssetParamsSchema>;
 
 export const updateAssetBodySchema = z.strictObject({
+  version: assetVersionSchema.optional(),
   name: assetNameSchema.optional().describe('Optional name of the asset, to rename asset'),
   description: descriptionSchema.optional().describe('Optional description of the asset'),
   keywords: z.string().max(10_240).optional().describe('Optional keywords of the asset'),
@@ -377,3 +384,43 @@ export const prepareAssetUpload = async (
   const response = await client.axios.post(path, body);
   return parseResult(client, prepareAssetUploadResultSchema, response.data);
 };
+
+export const assetVersionResultSchema = z.object({
+  id: z.number().int(),
+  assetId: z.number().int(),
+  version: assetVersionSchema,
+  fileOid: z.string(),
+  thumbnailOid: z.string().nullable(),
+  createdAt: z.iso.datetime(),
+  createdByUserId: z.number().int().nullable(),
+  originalSize: z.number().int().nullable(),
+});
+export type AssetVersion = z.infer<typeof assetVersionResultSchema>;
+export const listAssetVersionsResultSchema = z.array(assetVersionResultSchema);
+export const createAssetVersionBodySchema = z.strictObject({
+  uploadToken: z.string(),
+  version: assetVersionSchema.optional(),
+});
+export async function listAssetVersions(
+  client: ApiClient,
+  props: { params: AssetParamsForVersions },
+): Promise<AssetVersion[]> {
+  const params = assetParamsSchema.parse(props.params);
+  const response = await client.axios.get(buildPath('/assets/$orgName/$projectName/$assetName/versions', params));
+  return parseResult(client, listAssetVersionsResultSchema, response.data);
+}
+type AssetParamsForVersions = z.infer<typeof assetParamsSchema>;
+export async function createAssetVersion(
+  client: ApiClient,
+  props: { params: AssetParamsForVersions; body: z.infer<typeof createAssetVersionBodySchema> },
+): Promise<Asset> {
+  const params = assetParamsSchema.parse(props.params);
+  const body = createAssetVersionBodySchema.parse(props.body);
+  const response = await client.axios.post(
+    buildPath('/assets/$orgName/$projectName/$assetName/versions', params),
+    body,
+  );
+  return parseResult(client, assetSchema, response.data);
+}
+// Exact and floating references use the same read operation as an unversioned asset.
+export const getAssetVersion = getAsset;

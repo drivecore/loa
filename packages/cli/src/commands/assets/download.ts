@@ -1,3 +1,4 @@
+import { getAsset, formatAssetReference, parseAssetReference } from '@landofassets/sdk';
 import { writeFile } from 'node:fs/promises';
 import type { Readable } from 'node:stream';
 import { getMedia, getMediaOriginalUrl, startMediaTask, waitForTaskCompletion } from '@landofassets/sdk';
@@ -33,10 +34,15 @@ export const command = defineCommand({
     const debugCliTasks = process.env.DEBUG_CLI_ASSET_TASKS === '1' || process.env.DEBUG_CLI_ASSET_TASKS === 'true';
     const orgName = argv.org;
     const projectName = argv.project;
-    const assetName = argv.asset;
+    let assetName = argv.asset;
     const format = argv.format;
 
     const client = await createClient(getCliDeps(argv));
+    const selected = await getAsset(client, {
+      params: { orgName: argv.org, projectName: argv.project, assetName: argv.asset },
+    });
+    const pinnedAssetName = formatAssetReference(parseAssetReference(argv.asset).assetName, selected.version);
+    assetName = pinnedAssetName;
 
     let fileData: Readable;
     let filename: string;

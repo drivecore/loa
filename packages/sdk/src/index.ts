@@ -6,6 +6,7 @@ export * from './lib/eventRouter.js';
 export * from './lib/fileFormats.js';
 export * from './lib/list.js';
 export * from './lib/schemas.js';
+export * from './lib/semver.js';
 export * from './lib/types.js';
 export * from './lib/upload.js';
 export * from './lib/url.js';

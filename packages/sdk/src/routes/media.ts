@@ -3,7 +3,7 @@ import { type ApiClient, parseResult } from '../client.js';
 import { buildPath } from '../lib/buildPath.js';
 import { Enums } from '../lib/enums.js';
 import { fetchBinary } from '../lib/fetchBinary.js';
-import { assetParamsSchema, booleanPropSchema } from '../lib/schemas.js';
+import { assetReferenceParamsSchema, booleanPropSchema } from '../lib/schemas.js';
 import {
   type BinaryResponse,
   type BinaryResponseType,
@@ -13,7 +13,7 @@ import {
 import { makeUrl } from '../lib/url.js';
 
 // Alias retained for API route schema imports.
-export const getAssetMediaParamsSchema = assetParamsSchema;
+export const getAssetMediaParamsSchema = assetReferenceParamsSchema;
 export type GetAssetMediaParams = z.infer<typeof getAssetMediaParamsSchema>;
 
 // Content-Disposition format: inline; filename="filename.glb"
@@ -43,7 +43,7 @@ function extractFilenameFromContentDisposition(contentDisposition: string | unde
 // Path pattern: /media/:orgName/:projectName/:assetName/original | image/:format | model/:format | cad/:format
 // ---------------------------------------------------------------------------
 
-export const mediaParamsSchema = assetParamsSchema;
+export const mediaParamsSchema = assetReferenceParamsSchema;
 export type MediaParams = z.infer<typeof mediaParamsSchema>;
 
 // --- original ---

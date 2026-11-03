@@ -16,6 +16,7 @@ export const command = defineCommand({
   describe: 'Create a new asset from a file',
   builder: (yargs) =>
     yargs.options({
+      version: { type: 'string', description: 'Initial version (default: 1.0.0)' },
       file: {
         alias: 'f',
         type: 'string',
@@ -55,6 +56,7 @@ export const command = defineCommand({
       visibility: argv.visibility,
       shareLicense: argv.license,
       metadata: argv.metadata,
+      version: argv.version,
     });
   },
 });
