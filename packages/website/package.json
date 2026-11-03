@@ -1,0 +1,25 @@
+{
+  "name": "@landofassets/website",
+  "version": "0.0.0",
+  "private": true,
+  "homepage": "https://docs.landofassets.com",
+  "scripts": {
+    "generate": "mkdir -p .generated && node ../cli/dist/bin/loa.js docgen --output .generated/loa.json && typedoc",
+    "dev": "pnpm generate && docusaurus start --port 4000",
+    "docs:build": "pnpm generate && docusaurus build",
+    "serve": "docusaurus serve --port 4000"
+  },
+  "dependencies": {
+    "@clidoc/docusaurus": "^1.1.1",
+    "@docusaurus/core": "^3.10.2",
+    "@docusaurus/preset-classic": "^3.10.2",
+    "react": "^19.3.0",
+    "react-dom": "^19.3.0",
+    "redocusaurus": "^2.5.2"
+  },
+  "devDependencies": {
+    "typedoc": "^0.28.20",
+    "typedoc-plugin-markdown": "^4.14.1",
+    "typescript": "^6.0.3"
+  }
+}
