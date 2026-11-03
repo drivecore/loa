@@ -1,3 +1,4 @@
+/* Tokens copied from the landofassets.com dashboard (packages/dashboard/src/styles/app.css). */
 :root {
   --ifm-color-primary: #173f9b;
   --ifm-color-primary-dark: #15398c;
@@ -6,6 +7,23 @@
   --ifm-color-primary-light: #1945aa;
   --ifm-color-primary-lighter: #1a48b2;
   --ifm-color-primary-lightest: #1e52c9;
+  --ifm-font-family-base:
+    ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif, 'Apple Color Emoji',
+    'Segoe UI Emoji', 'Segoe UI Symbol', 'Noto Color Emoji';
+  --ifm-heading-font-weight: 600;
+  --ifm-heading-line-height: 1.25;
+  --ifm-global-radius: 0.25rem;
+  --ifm-background-color: hsl(40 20% 97%);
+  --ifm-background-surface-color: hsl(40 20% 97%);
+  --ifm-font-color-base: hsl(222 39% 11%);
+  --ifm-heading-color: hsl(222 39% 11%);
+  --ifm-color-emphasis-600: hsl(28 10% 35%);
+  --ifm-toc-border-color: hsl(30 10% 88%);
+  --ifm-hr-border-color: hsl(30 10% 88%);
+  --ifm-footer-background-color: hsl(40 14% 94%);
+  --loa-muted: hsl(28 10% 35%);
+  --loa-border: hsl(30 10% 88%);
+  --loa-card: #fff;
 }
 
 [data-theme='dark'] {
@@ -16,8 +34,26 @@
   --ifm-color-primary-light: #9bb6f3;
   --ifm-color-primary-lighter: #a9c0f5;
   --ifm-color-primary-lightest: #d2def9;
+  --ifm-background-color: hsl(224 25% 10%);
+  --ifm-background-surface-color: hsl(224 25% 10%);
+  --ifm-font-color-base: hsl(40 20% 96%);
+  --ifm-heading-color: hsl(40 20% 96%);
+  --ifm-color-emphasis-600: hsl(30 8% 72%);
+  --ifm-toc-border-color: hsl(223 16% 30%);
+  --ifm-hr-border-color: hsl(223 16% 30%);
+  --ifm-footer-background-color: hsl(222 19% 24%);
+  --loa-muted: hsl(30 8% 72%);
+  --loa-border: hsl(223 16% 30%);
+  --loa-card: hsl(223 23% 17%);
 }
 
-.footer--dark a {
-  color: #9bb6f3;
+.navbar {
+  box-shadow: none;
+  border-bottom: 1px solid var(--loa-border);
+}
+
+h1,
+h2,
+h3 {
+  letter-spacing: -0.025em;
 }

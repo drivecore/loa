@@ -47,7 +47,7 @@ module.exports = {
       ],
     },
     footer: {
-      style: 'dark',
+      style: 'light',
       copyright: `Copyright © ${new Date().getFullYear()} <a href="https://landofassets.com">Land of Assets</a> · SDK and CLI are MIT licensed`,
     },
   },
