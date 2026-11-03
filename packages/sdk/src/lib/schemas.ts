@@ -1,4 +1,5 @@
 import * as z from 'zod';
+import { assetVersionSelectorSchema } from './semver.js';
 import { Enums } from './enums.js';
 
 export const descriptionSchema = z.string().max(10_240).describe('The description of the entity');
@@ -59,6 +60,25 @@ export const assetParamsSchema = z.strictObject({
   assetName: assetNameSchema,
 });
 export type AssetParams = z.infer<typeof assetParamsSchema>;
+
+export const assetReferenceSchema = z.string().refine((value) => {
+  const [name, selector, extra] = value.split('@');
+  return (
+    extra === undefined &&
+    assetNameSchema.safeParse(name).success &&
+    (selector === undefined || assetVersionSelectorSchema.safeParse(selector).success)
+  );
+}, 'Expected an asset name with an optional @version selector');
+export const assetReferenceParamsSchema = assetParamsSchema.extend({ assetName: assetReferenceSchema });
+export function parseAssetReference(value: string): { assetName: string; version?: string } {
+  assetReferenceSchema.parse(value);
+  const [assetName, version] = value.split('@');
+  return { assetName: assetName!, ...(version === undefined ? {} : { version }) };
+}
+export function formatAssetReference(assetName: string, version?: string): string {
+  assetNameSchema.parse(assetName);
+  return version === undefined ? assetName : `${assetName}@${assetVersionSelectorSchema.parse(version)}`;
+}
 
 export const coreProductCodeRegex = '[a-zA-Z0-9][a-zA-Z0-9]*(?:-[a-zA-Z0-9]+)*';
 export const productCodeRegex = new RegExp(`^${coreProductCodeRegex}$`);

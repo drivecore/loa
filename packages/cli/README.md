@@ -195,3 +195,17 @@ To clear defaults, use `loa config clear --org` or `loa config clear --project`.
 ## License
 
 MIT
+
+## Asset versions
+
+```sh
+# Publish the next major version (e.g. 2.0.0 after 1.0.0)
+loa assets upload --org acme --project library --asset chair --file chair.glb
+# Publish an explicit unused version
+loa assets upload --org acme --project library --asset chair --file chair.glb --version 2.1.0
+loa assets versions --org acme --project library --asset chair --format json
+loa assets get --org acme --project library --asset chair@2.1
+loa assets download --org acme --project library --asset chair@latest --format glb
+```
+
+Creation defaults to `1.0.0` and accepts an explicit `--version`. Reads support exact, minor, major, and `latest` references. `latest` means the highest numeric version; uploads may be out of order. Existing versions cannot be overwritten. Each version retains its own thumbnail, uploader, and creation time. `assets update` edits metadata; `assets upload` publishes file versions.

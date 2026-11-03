@@ -1,3 +1,4 @@
+import { getAsset, formatAssetReference, parseAssetReference } from '@landofassets/sdk';
 import { writeFile } from 'node:fs/promises';
 import { getMedia, startMediaTask, waitForTaskCompletion } from '@landofassets/sdk';
 import { defineCommand } from 'yargs-file-commands';
@@ -34,11 +35,15 @@ export const command = defineCommand({
   handler: async (argv) => {
     const debugCliTasks = process.env.DEBUG_CLI_ASSET_TASKS === '1' || process.env.DEBUG_CLI_ASSET_TASKS === 'true';
     const client = await createClient(getCliDeps(argv));
+    const selected = await getAsset(client, {
+      params: { orgName: argv.org, projectName: argv.project, assetName: argv.asset },
+    });
+    const pinnedAssetName = formatAssetReference(parseAssetReference(argv.asset).assetName, selected.version);
 
     const params = {
       orgName: argv.org,
       projectName: argv.project,
-      assetName: argv.asset,
+      assetName: pinnedAssetName,
     };
     const start = await startMediaTask(client, {
       params,

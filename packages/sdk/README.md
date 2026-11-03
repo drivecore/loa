@@ -189,3 +189,26 @@ const validatedInput = createAssetBodySchema.parse(createAssetInput);
 ## License
 
 MIT
+
+## Asset versions
+
+Asset uploads create immutable `major.minor.patch` versions. New assets default to `1.0.0`; `createAssetVersion` defaults to the next major. Supply an unused exact `version` to publish a minor, patch, or older version explicitly. `updateAsset` edits metadata only.
+
+```typescript
+const params = { orgName: 'acme', projectName: 'library', assetName: 'chair' };
+const published = await createAssetVersion(client, { params, body: { uploadToken, version: '2.1.0' } });
+const versions = await listAssetVersions(client, { params });
+const selected = await getAsset(client, { params: { ...params, assetName: 'chair@2' } });
+const preview = getMediaUrl(client, {
+  params: { ...params, assetName: `chair@${selected.version}` },
+  format: 'glb',
+});
+const original = getMediaOriginalUrl(client, {
+  params: { ...params, assetName: `chair@${selected.version}` },
+  extension: selected.originalExtension,
+});
+```
+
+Reads accept `@2.1.0`, `@2.1`, `@2`, or `@latest`. Omission means latest. Automatic references select the highest matching numeric version, irrespective of upload time. Each version has `createdByUserId`, `createdByUserName`, and `createdAt`; migrated uploader information may be null. Original files and thumbnails belong to individual versions.
+
+Media URLs use file extensions: `/media/acme/library/chair@2.1.0.glb`, `chair@latest.glb`, or `chair.glb`. Source downloads use their actual extension and `?original=true`, including `.mtlx.zip` for materials. Previous grouped media paths and `/original` paths are removed. Only stable numeric versions are supported initially; custom tags, prereleases, build suffixes, and version ranges are unsupported.

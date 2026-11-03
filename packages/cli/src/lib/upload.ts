@@ -19,6 +19,7 @@ export type CreateAssetFromUploadOptions = {
   shareLicense?: Enums.ShareLicense;
   assetType?: Enums.AssetType;
   metadata?: string;
+  version?: string;
 };
 
 /**
@@ -54,6 +55,7 @@ export async function createAssetFromUpload(client: ApiClient, options: CreateAs
       visibility: options.visibility || 'PUBLIC',
       shareLicense: options.shareLicense || 'CC_BY',
       metadata: options.metadata,
+      version: options.version,
     },
   });
 }
