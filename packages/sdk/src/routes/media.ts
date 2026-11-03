@@ -63,7 +63,7 @@ export const getMediaOriginalUrl = (
     `/media/$orgName/$projectName/$assetName${extension.toLowerCase()}`,
     mediaParamsSchema.parse(props.params),
   );
-  return makeUrl(client.host, path, { ...props.query, original: true });
+  return makeUrl(client.host, path.replaceAll('%40', '@'), { ...props.query, original: true });
 };
 
 // --- 202 response schema ---
@@ -251,7 +251,7 @@ export type StartMediaTaskProps =
 export const getMediaUrl = (client: ApiClient, props: MediaUrlProps): URL => {
   const extension = props.format === 'ultrahdr' ? 'ultrahdr.jpg' : props.format;
   const path = buildPath(`/media/$orgName/$projectName/$assetName.${extension}`, mediaParamsSchema.parse(props.params));
-  return makeUrl(client.host, path, props.query);
+  return makeUrl(client.host, path.replaceAll('%40', '@'), props.query);
 };
 
 /**

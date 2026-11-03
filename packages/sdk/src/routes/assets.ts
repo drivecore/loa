@@ -19,7 +19,6 @@ import {
   projectParamsSchema,
 } from '../lib/schemas.js';
 import { assetVersionSchema } from '../lib/semver.js';
-import { ImageTransformOptionsSchema } from '../lib/types.js';
 
 /** Summary of a MATERIAL asset's MaterialX document, extracted on upload. */
 export const materialInfoSchema = z.object({
@@ -69,18 +68,6 @@ export const assetSchema = z.object({
 });
 
 export type Asset = z.infer<typeof assetSchema>;
-
-export const getAssetThumbnailParamsSchema = assetReferenceParamsSchema;
-
-export type GetAssetThumbnailParams = z.infer<typeof getAssetThumbnailParamsSchema>;
-
-export const getAssetThumbnailQuerySchema = ImageTransformOptionsSchema.merge(
-  z.strictObject({
-    redirectOnNotFound: z.url().optional().describe('The URL to redirect if the asset is not found'),
-  }),
-);
-
-export type GetAssetThumbnailQuery = z.infer<typeof getAssetThumbnailQuerySchema>;
 
 export const listAssetsSortFields = ['createdAt', 'updatedAt', 'name', 'likeCount', 'shareCount'] as const;
 

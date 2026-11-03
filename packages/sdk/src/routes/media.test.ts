@@ -198,3 +198,13 @@ describe('versioned media references', () => {
     }
   });
 });
+
+it('builds the canonical media URL spellings', () => {
+  for (const assetName of ['media@1.0.0', 'media', 'media@latest']) {
+    const url = getMediaUrl(client, {
+      params: { orgName: 'orgName', projectName: 'projectName', assetName },
+      format: 'glb',
+    });
+    expect(url.toString()).toBe(`${host}/media/orgName/projectName/${assetName}.glb`);
+  }
+});
