@@ -36,7 +36,7 @@ module.exports = {
     colorMode: { respectPrefersColorScheme: true },
     navbar: {
       title: 'Land of Assets',
-      logo: { alt: 'Land of Assets', src: 'img/logo.svg' },
+      logo: { alt: 'Land of Assets', src: 'img/logo.png', height: 32, width: 32 },
       items: [
         { to: '/getting-started', label: 'Get started', position: 'left' },
         { to: '/cli', label: 'CLI', position: 'left' },

@@ -64,11 +64,10 @@
   text-decoration: none;
 }
 .cards {
-  max-width: 1200px;
+  max-width: 900px;
   margin: auto;
   padding: 4rem 1.5rem 2rem;
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 1rem;
 }
 .card {
@@ -99,7 +98,7 @@
   overflow-x: auto;
 }
 .note {
-  max-width: 1200px;
+  max-width: 900px;
   margin: auto;
   padding: 2rem 1.5rem 4rem;
   display: flex;
@@ -117,9 +116,6 @@
   font-weight: 700;
 }
 @media (max-width: 900px) {
-  .cards {
-    grid-template-columns: 1fr;
-  }
   .note {
     display: block;
   }
