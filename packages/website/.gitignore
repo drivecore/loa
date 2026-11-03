@@ -1,0 +1,5 @@
+.docusaurus
+.generated
+build
+docs/cli
+docs/sdk

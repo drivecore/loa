@@ -1,0 +1,13 @@
+{
+  "$schema": "https://typedoc.org/schema.json",
+  "entryPoints": ["../sdk/src/index.ts"],
+  "tsconfig": "../sdk/tsconfig.json",
+  "plugin": ["typedoc-plugin-markdown"],
+  "out": "docs/sdk",
+  "readme": "none",
+  "entryFileName": "index",
+  "hidePageHeader": true,
+  "hideBreadcrumbs": true,
+  "sort": ["source-order"],
+  "disableSources": true
+}
