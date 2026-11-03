@@ -11,7 +11,7 @@ export const command = defineCommand({
   command: 'upload',
   describe: 'Upload a new asset version (defaults to the next major)',
   builder: (yargs) =>
-    yargs.options({
+    yargs.version(false).options({
       asset: { type: 'string', demandOption: true, description: 'Asset name' },
       file: { type: 'string', demandOption: true, description: 'File to upload' },
       version: { type: 'string', description: 'Unused major.minor.patch version' },

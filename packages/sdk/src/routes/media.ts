@@ -12,10 +12,6 @@ import {
 } from '../lib/types.js';
 import { makeUrl } from '../lib/url.js';
 
-// Alias retained for API route schema imports.
-export const getAssetMediaParamsSchema = assetReferenceParamsSchema;
-export type GetAssetMediaParams = z.infer<typeof getAssetMediaParamsSchema>;
-
 // Content-Disposition format: inline; filename="filename.glb"
 const FILENAME_REGEX = /filename="([^"]+)"/;
 const debugMediaTaskTrace = process.env.DEBUG_MEDIA_TASK_TRACE === '1' || process.env.DEBUG_MEDIA_TASK_TRACE === 'true';
@@ -40,7 +36,7 @@ function extractFilenameFromContentDisposition(contentDisposition: string | unde
 
 // ---------------------------------------------------------------------------
 // Media API (explicit GET read-only + POST to start tasks)
-// Path pattern: /media/:orgName/:projectName/:assetName/original | image/:format | model/:format | cad/:format
+// Path pattern: /media/:orgName/:projectName/:assetName.:extension
 // ---------------------------------------------------------------------------
 
 export const mediaParamsSchema = assetReferenceParamsSchema;
@@ -48,16 +44,26 @@ export type MediaParams = z.infer<typeof mediaParamsSchema>;
 
 // --- original ---
 
-export const mediaOriginalQuerySchema = z.object({ download: booleanPropSchema.optional() });
+export const mediaOriginalQuerySchema = z.object({
+  download: booleanPropSchema.optional(),
+  original: booleanPropSchema.optional(),
+});
 export type MediaOriginalQuery = z.infer<typeof mediaOriginalQuerySchema>;
 
-/** GET /media/:orgName/:projectName/:assetName/original - original uploaded file */
+/** GET /media/:orgName/:projectName/:assetName.:extension - original uploaded file */
 export const getMediaOriginalUrl = (
   client: ApiClient,
-  props: { params: MediaParams; query?: MediaOriginalQuery },
+  props: { params: MediaParams; query?: MediaOriginalQuery; extension: string },
 ): URL => {
-  const path = buildPath('/media/$orgName/$projectName/$assetName/original', mediaParamsSchema.parse(props.params));
-  return makeUrl(client.host, path, props.query);
+  const extension = z
+    .string()
+    .regex(/^\.[a-z0-9]+(?:\.[a-z0-9]+)*$/i)
+    .parse(props.extension);
+  const path = buildPath(
+    `/media/$orgName/$projectName/$assetName${extension.toLowerCase()}`,
+    mediaParamsSchema.parse(props.params),
+  );
+  return makeUrl(client.host, path, { ...props.query, original: true });
 };
 
 // --- 202 response schema ---
@@ -76,7 +82,10 @@ export type MediaTaskAccepted = z.infer<typeof mediaTaskAcceptedSchema>;
 export const HdrImageFormat = z.enum(['exr', 'hdr', 'ultrahdr']);
 export type HdrImageFormat = z.infer<typeof HdrImageFormat>;
 
-export const hdrImageQuerySchema = z.object({ download: booleanPropSchema.optional() });
+export const hdrImageQuerySchema = z.object({
+  download: booleanPropSchema.optional(),
+  original: booleanPropSchema.optional(),
+});
 export type HdrImageQuery = z.infer<typeof hdrImageQuerySchema>;
 
 export const hdrImageTaskQuerySchema = hdrImageQuerySchema.and(z.object({ cache: booleanPropSchema.optional() }));
@@ -97,7 +106,9 @@ export type ImageExrTaskQuery = HdrImageTaskQuery;
 export const ImageFormat = z.enum(['webp']);
 export type ImageFormat = z.infer<typeof ImageFormat>;
 
-export const imageQuerySchema = ImageResizeOptionsSchema.and(z.object({ download: booleanPropSchema.optional() }));
+export const imageQuerySchema = ImageResizeOptionsSchema.and(
+  z.object({ download: booleanPropSchema.optional(), original: booleanPropSchema.optional() }),
+);
 export type ImageQuery = z.infer<typeof imageQuerySchema>;
 
 export const imageTaskQuerySchema = imageQuerySchema.and(z.object({ cache: booleanPropSchema.optional() }));
@@ -112,6 +123,7 @@ export type ImageWebpTaskQuery = ImageTaskQuery;
 // --- Model: GLB ---
 
 export const modelGlbQuerySchema = z.object({
+  original: booleanPropSchema.optional(),
   download: booleanPropSchema.optional(),
   meshCompress: z.enum(Enums.GlbMeshCompress as unknown as [string, ...string[]]).optional(),
   textureCompress: z.enum(Enums.GlbTextureCompress as unknown as [string, ...string[]]).optional(),
@@ -123,7 +135,10 @@ export type ModelGlbTaskQuery = z.infer<typeof modelGlbTaskQuerySchema>;
 
 // --- Model: USDZ ---
 
-export const modelUsdzQuerySchema = z.object({ download: booleanPropSchema.optional() });
+export const modelUsdzQuerySchema = z.object({
+  download: booleanPropSchema.optional(),
+  original: booleanPropSchema.optional(),
+});
 export type ModelUsdzQuery = z.infer<typeof modelUsdzQuerySchema>;
 
 export const modelUsdzTaskQuerySchema = modelUsdzQuerySchema.and(z.object({ cache: booleanPropSchema.optional() }));
@@ -131,7 +146,10 @@ export type ModelUsdzTaskQuery = z.infer<typeof modelUsdzTaskQuerySchema>;
 
 // --- Model: Blend ---
 
-export const modelBlendQuerySchema = z.object({ download: booleanPropSchema.optional() });
+export const modelBlendQuerySchema = z.object({
+  download: booleanPropSchema.optional(),
+  original: booleanPropSchema.optional(),
+});
 export type ModelBlendQuery = z.infer<typeof modelBlendQuerySchema>;
 
 export const modelBlendTaskQuerySchema = modelBlendQuerySchema.and(z.object({ cache: booleanPropSchema.optional() }));
@@ -139,7 +157,10 @@ export type ModelBlendTaskQuery = z.infer<typeof modelBlendTaskQuerySchema>;
 
 // --- Model: FBX ---
 
-export const modelFbxQuerySchema = z.object({ download: booleanPropSchema.optional() });
+export const modelFbxQuerySchema = z.object({
+  download: booleanPropSchema.optional(),
+  original: booleanPropSchema.optional(),
+});
 export type ModelFbxQuery = z.infer<typeof modelFbxQuerySchema>;
 
 export const modelFbxTaskQuerySchema = modelFbxQuerySchema.and(z.object({ cache: booleanPropSchema.optional() }));
@@ -147,19 +168,28 @@ export type ModelFbxTaskQuery = z.infer<typeof modelFbxTaskQuerySchema>;
 
 // --- CAD: FCStd / IGES / STEP ---
 
-export const cadFcstdQuerySchema = z.object({ download: booleanPropSchema.optional() });
+export const cadFcstdQuerySchema = z.object({
+  download: booleanPropSchema.optional(),
+  original: booleanPropSchema.optional(),
+});
 export type CadFcstdQuery = z.infer<typeof cadFcstdQuerySchema>;
 
 export const cadFcstdTaskQuerySchema = cadFcstdQuerySchema.and(z.object({ cache: booleanPropSchema.optional() }));
 export type CadFcstdTaskQuery = z.infer<typeof cadFcstdTaskQuerySchema>;
 
-export const cadIgesQuerySchema = z.object({ download: booleanPropSchema.optional() });
+export const cadIgesQuerySchema = z.object({
+  download: booleanPropSchema.optional(),
+  original: booleanPropSchema.optional(),
+});
 export type CadIgesQuery = z.infer<typeof cadIgesQuerySchema>;
 
 export const cadIgesTaskQuerySchema = cadIgesQuerySchema.and(z.object({ cache: booleanPropSchema.optional() }));
 export type CadIgesTaskQuery = z.infer<typeof cadIgesTaskQuerySchema>;
 
-export const cadStepQuerySchema = z.object({ download: booleanPropSchema.optional() });
+export const cadStepQuerySchema = z.object({
+  download: booleanPropSchema.optional(),
+  original: booleanPropSchema.optional(),
+});
 export type CadStepQuery = z.infer<typeof cadStepQuerySchema>;
 
 export const cadStepTaskQuerySchema = cadStepQuerySchema.and(z.object({ cache: booleanPropSchema.optional() }));
@@ -219,16 +249,8 @@ export type StartMediaTaskProps =
  * Builds a typed media URL for GET routes across image/envmap/model formats.
  */
 export const getMediaUrl = (client: ApiClient, props: MediaUrlProps): URL => {
-  const routeGroup =
-    props.format === 'glb' || props.format === 'usdz' || props.format === 'blend' || props.format === 'fbx'
-      ? 'model'
-      : props.format === 'fcstd' || props.format === 'iges' || props.format === 'step'
-        ? 'cad'
-        : 'image';
-  const path = buildPath(
-    `/media/$orgName/$projectName/$assetName/${routeGroup}/${props.format}`,
-    mediaParamsSchema.parse(props.params),
-  );
+  const extension = props.format === 'ultrahdr' ? 'ultrahdr.jpg' : props.format;
+  const path = buildPath(`/media/$orgName/$projectName/$assetName.${extension}`, mediaParamsSchema.parse(props.params));
   return makeUrl(client.host, path, props.query);
 };
 

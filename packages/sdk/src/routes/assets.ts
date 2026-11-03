@@ -55,13 +55,14 @@ export const assetSchema = z.object({
   updatedAt: z.iso.datetime(),
   archived: z.boolean(),
   metadata: z.string().max(10_240),
-  versionOriginalSize: z.number().int().nullable().optional(),
+  originalSize: z.number().int().nullable().optional(),
   width: z.number().nullable().optional(),
   height: z.number().nullable().optional(),
   depth: z.number().nullable().optional(),
   version: assetVersionSchema,
   latestVersion: assetVersionSchema,
   versionId: z.number().int(),
+  originalExtension: z.string(),
   fileOid: z.string(),
   thumbnailOid: z.string().nullable().optional(),
   materialInfo: materialInfoSchema.optional(),
@@ -249,7 +250,6 @@ export const updateAssetParamsSchema = assetParamsSchema;
 export type UpdateAssetParams = z.infer<typeof updateAssetParamsSchema>;
 
 export const updateAssetBodySchema = z.strictObject({
-  version: assetVersionSchema.optional(),
   name: assetNameSchema.optional().describe('Optional name of the asset, to rename asset'),
   description: descriptionSchema.optional().describe('Optional description of the asset'),
   keywords: z.string().max(10_240).optional().describe('Optional keywords of the asset'),
@@ -265,10 +265,6 @@ export const updateAssetBodySchema = z.strictObject({
     .describe('Optional organization name of the asset, to transfer asset to a different project/organization'),
   archived: z.boolean().optional().describe('Optional archived status (true to archive, false to unarchive)'),
   metadata: z.string().max(10_240).optional().describe('Optional metadata as a string (max 10240 characters)'),
-  uploadToken: z
-    .string()
-    .optional()
-    .describe("Optional upload token from prepare-upload endpoint to update the asset's file content"),
 });
 
 export type UpdateAssetBody = z.infer<typeof updateAssetBodySchema>;

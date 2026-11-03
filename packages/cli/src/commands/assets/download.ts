@@ -124,6 +124,7 @@ export const command = defineCommand({
         console.log('[cli assets download] fetching original media', { asset: assetName });
       }
       const url = getMediaOriginalUrl(client, {
+        extension: selected.originalExtension,
         params: { orgName, projectName, assetName },
         query: { download: true },
       });
