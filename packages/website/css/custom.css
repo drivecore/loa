@@ -17,3 +17,7 @@
   --ifm-color-primary-lighter: #a9c0f5;
   --ifm-color-primary-lightest: #d2def9;
 }
+
+.footer--dark a {
+  color: #9bb6f3;
+}

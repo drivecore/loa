@@ -1,0 +1,154 @@
+.hero {
+  background:
+    radial-gradient(circle at 82% 15%, #dbe5fb 0, transparent 36%), linear-gradient(135deg, #f7f8fc 0%, #e9eef9 100%);
+  border-bottom: 1px solid #d3dcf0;
+}
+.heroInner {
+  max-width: 1200px;
+  margin: auto;
+  padding: 4rem 1.5rem;
+}
+.kicker {
+  color: #173f9b;
+  font-size: 0.78rem;
+  font-weight: 800;
+  letter-spacing: 0.16em;
+  margin-bottom: 1rem;
+}
+.hero h1 {
+  font-size: clamp(2.6rem, 6vw, 5rem);
+  line-height: 1;
+  letter-spacing: -0.05em;
+  color: #0f1d3d;
+  margin-bottom: 2rem;
+}
+.hero h1 em {
+  color: #173f9b;
+  font-style: normal;
+}
+.lead {
+  color: #44506b;
+  font-size: 1.25rem;
+  line-height: 1.55;
+  max-width: 48rem;
+}
+.actions {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 1.6rem;
+  margin-top: 2.5rem;
+}
+.primary {
+  display: inline-flex;
+  gap: 1.4rem;
+  align-items: center;
+  padding: 0.9rem 1.2rem;
+  border-radius: 0.55rem;
+  color: white;
+  background: #173f9b;
+  font-weight: 700;
+}
+.primary:hover {
+  color: white;
+  background: #0f2d73;
+  text-decoration: none;
+}
+.secondary {
+  color: #0f1d3d;
+  font-weight: 700;
+}
+.secondary:hover {
+  color: #173f9b;
+  text-decoration: none;
+}
+.cards {
+  max-width: 1200px;
+  margin: auto;
+  padding: 4rem 1.5rem 2rem;
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 1rem;
+}
+.card {
+  display: flex;
+  flex-direction: column;
+  border: 1px solid #d8dfee;
+  border-radius: 0.85rem;
+  padding: 2rem;
+  background: #fff;
+}
+.card h3 {
+  letter-spacing: -0.025em;
+}
+.card p:not(.kicker) {
+  color: #5b6478;
+  line-height: 1.6;
+}
+.card a {
+  margin-top: auto;
+  font-weight: 700;
+}
+.example {
+  background: #0f1d3d;
+  color: #d6e2ff;
+  padding: 1rem;
+  border-radius: 0.6rem;
+  font-size: 0.8rem;
+  overflow-x: auto;
+}
+.note {
+  max-width: 1200px;
+  margin: auto;
+  padding: 2rem 1.5rem 4rem;
+  display: flex;
+  align-items: center;
+  gap: 1.5rem;
+  color: #5b6478;
+}
+.note strong {
+  color: #0f1d3d;
+  white-space: nowrap;
+}
+.note a {
+  white-space: nowrap;
+  margin-left: auto;
+  font-weight: 700;
+}
+@media (max-width: 900px) {
+  .cards {
+    grid-template-columns: 1fr;
+  }
+  .note {
+    display: block;
+  }
+  .note > * {
+    display: block;
+    margin: 0.5rem 0;
+  }
+}
+[data-theme='dark'] .hero {
+  background: linear-gradient(135deg, #0d1529, #16264d);
+  border-color: #26365e;
+}
+[data-theme='dark'] .kicker,
+[data-theme='dark'] .hero h1 em {
+  color: #7fa3f0;
+}
+[data-theme='dark'] .hero h1,
+[data-theme='dark'] .secondary,
+[data-theme='dark'] .note strong {
+  color: #f2f5fc;
+}
+[data-theme='dark'] .lead,
+[data-theme='dark'] .card p:not(.kicker),
+[data-theme='dark'] .note {
+  color: #b4bfd8;
+}
+[data-theme='dark'] .card {
+  background: #131d36;
+  border-color: #2a3a63;
+}
+[data-theme='dark'] .example {
+  background: #0a1328;
+}

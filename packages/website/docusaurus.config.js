@@ -15,6 +15,7 @@ module.exports = {
       'classic',
       {
         docs: { routeBasePath: '/', sidebarPath: './sidebars.js' },
+        pages: { path: 'pages' },
         blog: false,
         theme: { customCss: './css/custom.css' },
       },
@@ -32,11 +33,12 @@ module.exports = {
   ],
   plugins: [[clidocPlugin, { input: '.generated/loa.json', outputDir: 'docs/cli', basePath: '/cli' }]],
   themeConfig: {
+    colorMode: { respectPrefersColorScheme: true },
     navbar: {
       title: 'Land of Assets',
       logo: { alt: 'Land of Assets', src: 'img/logo.svg' },
       items: [
-        { to: '/', label: 'Get started', position: 'left', activeBaseRegex: '^/$' },
+        { to: '/getting-started', label: 'Get started', position: 'left' },
         { to: '/cli', label: 'CLI', position: 'left' },
         { to: '/sdk', label: 'SDK', position: 'left' },
         { to: '/api', label: 'REST API', position: 'left' },
