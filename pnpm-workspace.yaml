@@ -12,6 +12,3 @@ minimumReleaseAgeExclude:
   - yargs-file-commands
   - '@clidoc/core'
   - '@clidoc/yargs'
-
-patchedDependencies:
-  '@clidoc/yargs': patches/@clidoc__yargs.patch
