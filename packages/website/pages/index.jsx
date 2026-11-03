@@ -69,8 +69,8 @@ export default function Home() {
             and you are a few lines from your first asset.
           </p>
           <div className={styles.actions}>
-            <Link className={styles.primary} to="/getting-started">
-              Getting started guide <span aria-hidden="true">→</span>
+            <Link className={styles.primary} href="https://landofassets.com/signup">
+              Sign up for free <span aria-hidden="true">→</span>
             </Link>
             <Link className={styles.secondary} to="/api">
               Browse the REST API <span aria-hidden="true">→</span>
@@ -91,11 +91,6 @@ export default function Home() {
               <Link to={path.to}>{path.link} →</Link>
             </article>
           ))}
-        </section>
-        <section className={styles.note}>
-          <strong>New to Land of Assets?</strong>
-          <span>The getting started guide covers accounts, API tokens, and your first upload end to end.</span>
-          <Link to="/getting-started">Read the guide →</Link>
         </section>
       </main>
     </Layout>

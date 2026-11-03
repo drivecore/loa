@@ -97,30 +97,3 @@
   font-size: 0.8rem;
   overflow-x: auto;
 }
-.note {
-  max-width: 900px;
-  margin: auto;
-  padding: 2rem 1.5rem 4rem;
-  display: flex;
-  align-items: center;
-  gap: 1.5rem;
-  color: var(--loa-muted);
-}
-.note strong {
-  color: var(--ifm-heading-color);
-  white-space: nowrap;
-}
-.note a {
-  white-space: nowrap;
-  margin-left: auto;
-  font-weight: 700;
-}
-@media (max-width: 900px) {
-  .note {
-    display: block;
-  }
-  .note > * {
-    display: block;
-    margin: 0.5rem 0;
-  }
-}
