@@ -223,3 +223,15 @@ loa tasks retry 123 --org my-org --project my-project
 `list` supports `--page-offset` and `--page-size` (1–1000). `get` includes the latest run status and results; a null latest run status means the task has no run yet. `retry` re-queues an existing task and prints `{ "success": true }` when accepted; it does not wait for completion. IDs must be positive integers. All three commands support `--format json|yaml|csv`.
 
 For a personal backend, set `LOA_HOST=http://localhost:3001` and log in to that host before running commands. Tasks use the existing project permissions and authentication.
+
+### Files
+
+Download a storage file using an OID from task results (for example, `latestRunResults.oid`):
+
+```sh
+loa files download <oid> --output generated.glb
+```
+
+The OID must be 64 lowercase hexadecimal characters. `--output` (`-o`) defaults to the OID in the current directory. Downloads stream to disk, refuse to overwrite existing files, and remove incomplete output if downloading fails. Parent directories must already exist.
+
+This uses the configured host (`LOA_HOST` or `loa config set --host`) and the existing anonymous `/files/:oid` endpoint. Anyone who knows an OID can download that file; login and project permissions are not checked by that endpoint. Stored credentials are not sent by this command.
