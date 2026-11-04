@@ -15,7 +15,6 @@ export const command = defineCommand({
       },
       host: {
         type: 'string',
-        alias: 'h',
         description: 'API host URL (overrides config)',
       },
     }),
