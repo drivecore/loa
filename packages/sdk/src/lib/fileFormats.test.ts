@@ -1,13 +1,39 @@
 import { describe, expect, it } from 'vitest';
 
 import {
+  ASSET_TYPE_FILE_MAPPINGS,
   FileFormat,
+  getAssetTypeFromFileFormat,
+  getFileFormatInfoAcceptObject,
   getFileFormatInfoFromFileName,
   getFileFormatInfoFromMimeTypeAndFileName,
   getFileNameExtension,
+  LIGHT_ASSET_FILE_FORMATS,
 } from './fileFormats.js';
 
 describe('fileFormats', () => {
+  it('recognizes IES files as photometric lights', () => {
+    expect(getFileFormatInfoFromFileName('Spotlight.IES', FileFormat)).toMatchObject({
+      format: 'ies',
+      mimeType: 'application/ies',
+      extension: '.ies',
+    });
+    expect(getFileNameExtension('Spotlight.IES')).toBe('.ies');
+    expect(getAssetTypeFromFileFormat('ies')).toBe('LIGHT');
+    expect(ASSET_TYPE_FILE_MAPPINGS.LIGHT.fileFormats).toEqual(['ies']);
+    expect(getFileFormatInfoAcceptObject(LIGHT_ASSET_FILE_FORMATS)).toEqual({ 'application/ies': ['.ies'] });
+  });
+
+  it.each(['application/ies', 'text/plain', 'application/octet-stream'])(
+    'recognizes IES MIME type %s within light formats',
+    (mimeType) => {
+      expect(getFileFormatInfoFromMimeTypeAndFileName(mimeType, 'spot.ies', LIGHT_ASSET_FILE_FORMATS)?.format).toBe(
+        'ies',
+      );
+      expect(getFileFormatInfoFromMimeTypeAndFileName(mimeType, 'spot.ies', ['mtlx'])).toBeUndefined();
+    },
+  );
+
   it('matches compound extensions before single ones', () => {
     expect(getFileFormatInfoFromFileName('Copper.MTLX.zip', FileFormat)?.format).toBe('mtlx');
     expect(getFileFormatInfoFromFileName('copper.mtlx', FileFormat)?.format).toBe('mtlx');

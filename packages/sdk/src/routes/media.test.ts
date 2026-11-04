@@ -7,6 +7,17 @@ const client = createAnonymousClient({ host });
 const params = { orgName: 'my-org', projectName: 'my-project', assetName: 'my-asset' };
 
 describe('Media API URL builders', () => {
+  it('builds a versioned IES source download URL', () => {
+    const url = getMediaOriginalUrl(client, {
+      extension: '.ies',
+      params: { ...params, assetName: 'spotlight@1.2.3' },
+      query: { download: true },
+    });
+    expect(url.pathname).toBe('/media/my-org/my-project/spotlight@1.2.3.ies');
+    expect(url.searchParams.get('original')).toBe('true');
+    expect(url.searchParams.get('download')).toBe('true');
+  });
+
   it('getMediaOriginalUrl builds path /media/$orgName/$projectName/$assetName.glb', () => {
     const url = getMediaOriginalUrl(client, { extension: '.glb', params });
     expect(url.href).toBe(`${host}/media/my-org/my-project/my-asset.glb?original=true`);

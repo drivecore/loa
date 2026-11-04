@@ -25,7 +25,7 @@ export namespace Enums {
   ] as const;
   export type ShareLicense = (typeof ShareLicense)[number];
 
-  export const AssetType = ['MODEL', 'MATERIAL', 'IMAGE', 'SCENE', 'ENVMAP', 'CAD'] as const;
+  export const AssetType = ['MODEL', 'MATERIAL', 'IMAGE', 'SCENE', 'ENVMAP', 'CAD', 'LIGHT'] as const;
   export type AssetType = (typeof AssetType)[number];
 
   export const AiUsage = ['UNDISCLOSED', 'AI_USED', 'AI_FREE'] as const;
