@@ -210,6 +210,18 @@ loa assets download --org acme --project library --asset chair@latest --format g
 
 Creation defaults to `1.0.0` and accepts an explicit `--version`. Reads support exact, minor, major, and `latest` references. `latest` means the highest numeric version; uploads may be out of order. Existing versions cannot be overwritten. Each version retains its own thumbnail, uploader, and creation time. `assets update` edits metadata; `assets upload` publishes file versions.
 
+### IES photometric lights
+
+`.ies` files infer the `LIGHT` asset type and `application/ies` MIME type. You can also select
+`--type LIGHT` explicitly. Original downloads retain the IES source; omit `--format` when downloading.
+
+```sh
+loa assets create --org acme --project lighting --asset spotlight --file spotlight.ies --visibility PRIVATE
+loa assets list --org acme --project lighting --type LIGHT
+loa assets upload --org acme --project lighting --asset spotlight --file spotlight.ies --version 1.1.0
+loa assets download --org acme --project lighting --asset spotlight@1.1.0 --output spotlight.ies
+```
+
 ### Tasks
 
 Manage background jobs in a project. Organization and project can also come from `loa config set` defaults.
