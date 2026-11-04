@@ -30,7 +30,7 @@ export const command = defineCommand({
       type: {
         type: 'string',
         choices: sdk.Enums.AssetType,
-        description: 'Asset type',
+        description: 'Asset type (inferred from file extension when omitted; .ies creates LIGHT)',
       },
       ...getAssetVisibilityRequiredOption(),
       ...getLicenseOption(),

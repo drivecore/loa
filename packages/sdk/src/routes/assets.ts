@@ -33,6 +33,31 @@ export const materialInfoSchema = z.object({
 
 export type MaterialInfo = z.infer<typeof materialInfoSchema>;
 
+/** Summary of a LIGHT asset's IES photometry, extracted on upload. */
+export const lightInfoSchema = z.object({
+  version: z.string(),
+  metadata: z.record(z.string(), z.string()),
+  photometricType: z.number().int().min(1).max(3),
+  photometricTypeName: z.enum(['A', 'B', 'C']),
+  photometry: z.enum(['absolute', 'relative']),
+  manufacturer: z.string(),
+  luminaire: z.string(),
+  lightSource: z.string(),
+  lampCatalog: z.string(),
+  lampCount: z.number().int(),
+  lumensPerLamp: z.number(),
+  inputWatts: z.number(),
+  peakCandela: z.number(),
+  verticalAngles: z.number().int(),
+  horizontalAngles: z.number().int(),
+  units: z.enum(['feet', 'meters']),
+  dimensions: z.object({ width: z.number(), length: z.number(), height: z.number() }),
+  hasTilt: z.boolean(),
+  warnings: z.array(z.string()),
+});
+
+export type LightInfo = z.infer<typeof lightInfoSchema>;
+
 export const assetSchema = z.object({
   id: z.number().int(),
   name: z.string(),
@@ -65,6 +90,7 @@ export const assetSchema = z.object({
   fileOid: z.string(),
   thumbnailOid: z.string().nullable().optional(),
   materialInfo: materialInfoSchema.optional(),
+  lightInfo: lightInfoSchema.optional(),
 });
 
 export type Asset = z.infer<typeof assetSchema>;

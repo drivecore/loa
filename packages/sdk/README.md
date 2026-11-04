@@ -105,6 +105,13 @@ The `uploadFile` helper:
 
 For more control, you can use `prepareAssetUpload()` and `uploadFileToUploadUrl()` directly.
 
+IES photometric files use asset type `LIGHT`. Upload a `.ies` file with `uploadFile()` (which infers
+`application/ies`) and pass `type: 'LIGHT'` to `createAsset()`. Light assets include an optional typed
+`lightInfo` summary with manufacturer and luminaire metadata, peak candela, lamp data, dimensions,
+angle counts, and validation warnings. Download the original with `getMediaOriginalUrl()` using
+`extension: '.ies'`; request a preview with the existing WebP media format. Filter lights with
+`listAssets(client, { query: { type: 'LIGHT' } })`.
+
 ## API Reference
 
 ### Client Configuration

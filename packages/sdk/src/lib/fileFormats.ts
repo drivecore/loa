@@ -23,6 +23,12 @@ const FILE_FORMAT_DEFINITIONS = {
   glb: { name: 'Khronos glTF (GLB)', mimeType: 'model/gltf-binary', extension: '.glb' },
   gltf: { name: 'Khronos glTF (GLTF)', mimeType: 'model/gltf+json', extension: '.gltf' },
   hdr: { name: 'Radiance (HDR)', mimeType: 'image/vnd.radiance', extension: '.hdr' },
+  ies: {
+    name: 'IES photometric light (IES)',
+    mimeType: 'application/ies',
+    extension: '.ies',
+    alternativeMimeTypes: ['text/plain', 'application/octet-stream'],
+  },
   iges: {
     name: 'IGES',
     mimeType: 'model/iges',
@@ -98,6 +104,7 @@ export const IMAGE_ASSET_FILE_FORMATS = ['jpg', 'png', 'webp'] as const satisfie
 export const ENVMAP_ASSET_FILE_FORMATS = ['hdr', 'exr'] as const satisfies readonly FileFormat[];
 export const CAD_ASSET_FILE_FORMATS = ['fcstd', 'iges', 'step'] as const satisfies readonly FileFormat[];
 export const MATERIAL_ASSET_FILE_FORMATS = ['mtlx'] as const satisfies readonly FileFormat[];
+export const LIGHT_ASSET_FILE_FORMATS = ['ies'] as const satisfies readonly FileFormat[];
 
 function getDescriptionExtensionList(fileFormatInfos: readonly FileFormatInfo[]): string {
   return Array.from(
@@ -116,6 +123,10 @@ function buildAssetTypeDescription(prefix: string, fileFormatInfos: readonly Fil
 }
 
 export const ASSET_TYPE_FILE_MAPPINGS: Record<Enums.AssetType, AssetTypeFileMapping> = {
+  LIGHT: {
+    fileFormats: LIGHT_ASSET_FILE_FORMATS,
+    description: buildAssetTypeDescription('Photometric lights', getFileFormatInfos(LIGHT_ASSET_FILE_FORMATS)),
+  },
   MODEL: {
     fileFormats: MODEL_ASSET_FILE_FORMATS,
     description: buildAssetTypeDescription('3D model files', getFileFormatInfos(MODEL_ASSET_FILE_FORMATS)),
