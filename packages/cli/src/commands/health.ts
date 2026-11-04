@@ -12,7 +12,6 @@ export const command = defineCommand({
     yargs.options({
       host: {
         type: 'string',
-        alias: 'h',
         description: 'API host URL (overrides config)',
       },
     }),
