@@ -1,0 +1,120 @@
+import { execFile } from 'node:child_process';
+import { mkdtemp, readFile, readdir, rm } from 'node:fs/promises';
+import { createServer, type Server } from 'node:http';
+import type { AddressInfo } from 'node:net';
+import { tmpdir } from 'node:os';
+import { join } from 'node:path';
+import { fileURLToPath } from 'node:url';
+import { promisify } from 'node:util';
+import { Enums } from '@landofassets/sdk';
+import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it } from 'vitest';
+
+const cli = fileURLToPath(new URL('../../../dist/bin/loa.js', import.meta.url));
+const bytes = Buffer.from('original bytes from bucket');
+let server: Server;
+let host: string;
+let home: string;
+let assetName: string;
+let extension: string;
+
+beforeAll(async () => {
+  server = createServer((req, res) => {
+    const path = new URL(req.url!, host).pathname;
+    if (path.startsWith('/assets/')) {
+      res.writeHead(200, { 'Content-Type': 'application/json' });
+      res.end(
+        JSON.stringify({
+          id: 1,
+          name: assetName,
+          type: 'MODEL',
+          visibility: 'PUBLIC',
+          projectId: 1,
+          projectName: 'Project',
+          orgId: 1,
+          orgName: 'Org',
+          description: '',
+          keywords: '',
+          shareLicense: Enums.ShareLicense[0],
+          aiUsage: Enums.AiUsage[0],
+          commentMode: 'ENABLED',
+          reported: false,
+          likeCount: 0,
+          shareCount: 0,
+          createdAt: '2026-11-05T00:00:00.000Z',
+          updatedAt: '2026-11-05T00:00:00.000Z',
+          archived: false,
+          metadata: '',
+          version: '1.0.0',
+          latestVersion: '1.0.0',
+          versionId: 1,
+          originalExtension: extension,
+          fileOid: 'a'.repeat(64),
+        }),
+      );
+    } else if (req.method === 'POST') {
+      res.writeHead(202, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({ status: 'SUCCESS' }));
+    } else if (path.startsWith('/media/')) {
+      res.writeHead(302, { Location: '/files/opaque-hash' });
+      res.end();
+    } else if (path.startsWith('/files/')) {
+      res.writeHead(302, { Location: '/bucket/object' });
+      res.end();
+    } else if (path === '/bucket/object') {
+      res.writeHead(200, {
+        'Content-Type': 'model/gltf-binary',
+        'Content-Disposition': 'attachment; filename="opaque-hash.glb"',
+      });
+      res.end(bytes);
+    } else {
+      res.writeHead(404);
+      res.end();
+    }
+  });
+  await new Promise<void>((resolve) => server.listen(0, '127.0.0.1', resolve));
+  host = `http://127.0.0.1:${(server.address() as AddressInfo).port}`;
+});
+afterAll(
+  async () => new Promise<void>((resolve, reject) => server.close((error) => (error ? reject(error) : resolve()))),
+);
+beforeEach(async () => {
+  home = await mkdtemp(join(tmpdir(), 'loa-asset-filename-'));
+  assetName = 'Chair';
+  extension = '.glb';
+});
+afterEach(async () => rm(home, { recursive: true, force: true }));
+async function run(extra: string[] = []) {
+  return promisify(execFile)(
+    process.execPath,
+    [cli, 'assets', 'download', '--org', 'Org', '--project', 'Project', '--asset', assetName, ...extra],
+    {
+      cwd: home,
+      env: { ...process.env, HOME: home, LOA_HOST: host, LOA_TOKEN: '' },
+    },
+  );
+}
+
+describe('asset download local filenames', () => {
+  it('names original downloads using the asset and original extension', async () => {
+    await run();
+    expect(await readFile(join(home, 'Chair.glb'))).toEqual(bytes);
+  });
+  it('ignores the bucket default name for converted downloads', async () => {
+    await run(['--format', 'glb']);
+    expect(await readFile(join(home, 'Chair.glb'))).toEqual(bytes);
+    expect(await readdir(home)).not.toContain('opaque-hash.glb');
+  });
+  it('preserves explicit output paths', async () => {
+    await run(['--format', 'glb', '--output', 'custom-name.bin']);
+    expect(await readFile(join(home, 'custom-name.bin'))).toEqual(bytes);
+  });
+  it('preserves explicit output paths for original downloads', async () => {
+    await run(['--output', 'original.custom']);
+    expect(await readFile(join(home, 'original.custom'))).toEqual(bytes);
+  });
+  it('preserves compound original extensions', async () => {
+    extension = '.mtlx.zip';
+    await run();
+    expect(await readFile(join(home, 'Chair.mtlx.zip'))).toEqual(bytes);
+  });
+});
