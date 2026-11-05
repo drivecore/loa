@@ -1,5 +1,13 @@
 import { describe, expect, it } from 'vitest';
-import { createAssetBodySchema, lightInfoSchema, listAssetsQuerySchema, type LightInfo } from './assets.js';
+import {
+  createAssetBodySchema,
+  createAssetVersionBodySchema,
+  updateAssetVersionBodySchema,
+  updateAssetVersionParamsSchema,
+  lightInfoSchema,
+  listAssetsQuerySchema,
+  type LightInfo,
+} from './assets.js';
 
 const lightInfo: LightInfo = {
   version: 'LM-63-2002',
@@ -45,5 +53,28 @@ describe('LIGHT asset contracts', () => {
       }).type,
     ).toBe('LIGHT');
     expect(listAssetsQuerySchema.parse({ type: 'LIGHT' }).type).toBe('LIGHT');
+  });
+});
+
+describe('asset version descriptions', () => {
+  const description = 'Release **notes**\n\n- Fixed geometry\n- Updated materials';
+  it('preserves multiline Markdown in create and update requests', () => {
+    expect(createAssetVersionBodySchema.parse({ uploadToken: 'token', description }).description).toBe(description);
+    expect(updateAssetVersionBodySchema.parse({ description }).description).toBe(description);
+    expect(updateAssetVersionBodySchema.parse({ description: '' }).description).toBe('');
+  });
+  it('limits descriptions to 10,240 characters', () => {
+    expect(updateAssetVersionBodySchema.safeParse({ description: 'a'.repeat(10_240) }).success).toBe(true);
+    expect(updateAssetVersionBodySchema.safeParse({ description: 'a'.repeat(10_241) }).success).toBe(false);
+    expect(
+      createAssetVersionBodySchema.safeParse({ uploadToken: 'token', description: 'a'.repeat(10_241) }).success,
+    ).toBe(false);
+  });
+  it('requires an exact version for description edits', () => {
+    const params = { orgName: 'org', projectName: 'project', assetName: 'asset' };
+    expect(updateAssetVersionParamsSchema.safeParse({ ...params, version: '1.2.3' }).success).toBe(true);
+    for (const version of ['latest', '1', '1.2']) {
+      expect(updateAssetVersionParamsSchema.safeParse({ ...params, version }).success).toBe(false);
+    }
   });
 });
