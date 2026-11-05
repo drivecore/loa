@@ -2,9 +2,12 @@
  * Check if an error is an AxiosError by checking for the isAxiosError property
  * or by checking if it has a response property with a status field.
  */
-function isAxiosError(
-  error: unknown,
-): error is { isAxiosError: boolean; response?: { status: number; data?: unknown }; message: string } {
+function isAxiosError(error: unknown): error is {
+  isAxiosError: boolean;
+  response?: { status: number; data?: unknown; headers?: Record<string, unknown> };
+  config?: { url?: string };
+  message: string;
+} {
   if (typeof error !== 'object' || error === null) {
     return false;
   }
@@ -27,6 +30,18 @@ export function formatError(error: unknown): string {
   if (isAxiosError(error)) {
     const status = error.response?.status;
     const responseData = error.response?.data;
+
+    // Refresh can fail before the command's asset request is sent. Identify that
+    // stage without printing the Axios config/body, which contains credentials.
+    if (error.config?.url?.endsWith('/auth/refresh-access-token')) {
+      const headers = error.response?.headers;
+      const trace = headers?.['x-cloud-trace-context'];
+      const traceId =
+        typeof trace === 'string' && /^[a-f0-9]{32}(?:\/\d+)?(?:;o=[01])?$/.test(trace)
+          ? trace.split('/')[0]?.split(';')[0]
+          : undefined;
+      return `Token refresh failed${status ? ` (HTTP ${status})` : ''}.${traceId ? ` Trace ID: ${traceId}.` : ''} ${status === 401 ? 'Please run "loa auth login" to authenticate.' : 'Please try again later.'}`;
+    }
 
     // Extract error message from response data if available
     let errorMessage: string | undefined;

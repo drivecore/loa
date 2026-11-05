@@ -40,12 +40,32 @@ export const refreshAccessToken = async (
   validateResults = false,
 ): Promise<RefreshAccessTokenResult> => {
   const { body } = refreshAccessTokenPropsSchema.parse(props);
-  const response = await axios.post<RefreshAccessTokenResult>(`${host}/auth/refresh-access-token`, body);
+  const response = await refreshAccessTokenWithRetry(host, body);
   if (validateResults) {
     return refreshAccessTokenResultSchema.parse(response.data);
   }
   return response.data;
 };
+
+async function refreshAccessTokenWithRetry(host: string, body: RefreshAccessTokenBody) {
+  // Refresh issues another access token without rotating the refresh token. Retrying
+  // it is safe even if the response was lost; retrying an asset create is not.
+  for (let attempt = 0; ; attempt++) {
+    try {
+      return await axios.post<RefreshAccessTokenResult>(`${host}/auth/refresh-access-token`, body);
+    } catch (error) {
+      if (!axios.isAxiosError(error) || attempt >= 2) throw error;
+      const status = error.response?.status;
+      const retryable =
+        status !== undefined
+          ? [500, 502, 503, 504].includes(status)
+          : ['ECONNRESET', 'ECONNABORTED', 'ETIMEDOUT', 'EAI_AGAIN', 'ERR_NETWORK'].includes(error.code ?? '');
+      if (!retryable) throw error;
+      // Bounded exponential backoff with jitter avoids synchronized retries.
+      await new Promise((resolve) => setTimeout(resolve, 250 * 2 ** attempt * (1 + Math.random())));
+    }
+  }
+}
 
 export const oauthTokenRequestBodySchema = z.strictObject({
   grant_type: z.literal('authorization_code'),

@@ -123,8 +123,14 @@ const createJWTInstance = (host: string, refreshToken: string, accessToken?: str
     async (error) => {
       const requestConfig = error.config as InternalAxiosRequestConfig & { _retried?: boolean };
 
-      // Only attempt refresh once per request
-      if (error.response?.status === 401 && !requestConfig._retried) {
+      // A refresh failure from the request interceptor is not a failed API
+      // request. In particular, rejected refresh credentials must not refresh again.
+      if (
+        error.response?.status === 401 &&
+        requestConfig &&
+        requestConfig.url !== `${host}/auth/refresh-access-token` &&
+        !requestConfig._retried
+      ) {
         requestConfig._retried = true;
         await refresh(requestConfig);
         // Retry the request once if refresh succeeded
