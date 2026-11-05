@@ -7,6 +7,10 @@ import { getOrgOption, getProjectOption } from '../../lib/args.ts';
 import { createClient } from '../../lib/client.ts';
 import { getCliDeps } from '../../lib/deps.ts';
 
+function getDownloadFilename(assetName: string, extension: string): string {
+  return `${assetName}${extension.startsWith('.') ? '' : '.'}${extension}`;
+}
+
 export const command = defineCommand({
   command: 'download',
   describe: 'Download asset file',
@@ -118,7 +122,7 @@ export const command = defineCommand({
         'stream',
       );
       fileData = result.data;
-      filename = result.fileName ?? `${selected.name}.${format}`;
+      filename = getDownloadFilename(selected.name, format);
     } else {
       if (debugCliTasks) {
         console.log('[cli assets download] fetching original media', { asset: assetName });
@@ -130,7 +134,7 @@ export const command = defineCommand({
       });
       const result = await client.axios.get(url.toString(), { responseType: 'stream' });
       fileData = result.data as Readable;
-      filename = selected.name;
+      filename = getDownloadFilename(selected.name, selected.originalExtension);
     }
 
     const outputPath = argv.output ?? filename;
