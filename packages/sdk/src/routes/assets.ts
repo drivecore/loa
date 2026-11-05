@@ -395,6 +395,7 @@ export const prepareAssetUpload = async (
 };
 
 export const assetVersionResultSchema = z.object({
+  description: descriptionSchema.default(''),
   id: z.number().int(),
   assetId: z.number().int(),
   version: assetVersionSchema,
@@ -408,6 +409,7 @@ export const assetVersionResultSchema = z.object({
 export type AssetVersion = z.infer<typeof assetVersionResultSchema>;
 export const listAssetVersionsResultSchema = z.array(assetVersionResultSchema);
 export const createAssetVersionBodySchema = z.strictObject({
+  description: descriptionSchema.optional(),
   uploadToken: z.string(),
   version: assetVersionSchema.optional(),
 });
@@ -434,3 +436,22 @@ export async function createAssetVersion(
 }
 // Exact and floating references use the same read operation as an unversioned asset.
 export const getAssetVersion = getAsset;
+
+/** Edit release notes without changing the immutable version file. */
+export const updateAssetVersionParamsSchema = assetParamsSchema.extend({ version: assetVersionSchema });
+export const updateAssetVersionBodySchema = z.strictObject({ description: descriptionSchema });
+export async function updateAssetVersion(
+  client: ApiClient,
+  props: {
+    params: z.infer<typeof updateAssetVersionParamsSchema>;
+    body: z.infer<typeof updateAssetVersionBodySchema>;
+  },
+): Promise<AssetVersion> {
+  const params = updateAssetVersionParamsSchema.parse(props.params);
+  const body = updateAssetVersionBodySchema.parse(props.body);
+  const response = await client.axios.patch(
+    buildPath('/assets/$orgName/$projectName/$assetName/versions/$version', params),
+    body,
+  );
+  return parseResult(client, assetVersionResultSchema, response.data);
+}
