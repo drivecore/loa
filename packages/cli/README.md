@@ -40,6 +40,14 @@ loa auth logout         # Log out and clear credentials
 loa auth status         # Show current authentication status
 ```
 
+`loa auth status` displays the API host, authenticated username, login time, and
+session expiry in UTC. It validates the current credential with the server,
+including credentials supplied through `LOA_TOKEN`. For API tokens, it also shows
+the token creation time and reports that the token never expires; the login time
+is when `loa auth login --token` saved it locally. Login times are unknown for
+environment tokens and tokens saved by older CLI versions. Servers that do not
+yet provide credential details show unknown identity and expiry values.
+
 ### Configuration
 
 ```bash
