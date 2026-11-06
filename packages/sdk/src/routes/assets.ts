@@ -58,6 +58,176 @@ export const lightInfoSchema = z.object({
 
 export type LightInfo = z.infer<typeof lightInfoSchema>;
 
+/** Extracted facts use canonical units; unknown measurements are null, never guessed. */
+const analysisCount = z.number().int().nonnegative();
+const analysisValue = z.number().nonnegative();
+export const assetTextureInfoSchema = z.object({
+  id: z.string(),
+  path: z.string().nullable(),
+  widthPixels: analysisCount.nullable(),
+  heightPixels: analysisCount.nullable(),
+  format: z.string().nullable(),
+  mimeType: z.string().nullable(),
+  byteSize: analysisCount.nullable(),
+  mipLevelCount: analysisCount.nullable().optional(),
+  colorSpace: z.string().nullable().optional(),
+  usages: z.array(z.string()).optional(),
+});
+export type AssetTextureInfo = z.infer<typeof assetTextureInfoSchema>;
+export const assetAnalysisDiagnosticSchema = z.object({
+  code: z.string(),
+  severity: z.enum(['error', 'warning', 'info']),
+  message: z.string(),
+  location: z.string().optional(),
+});
+export const assetValidationSchema = z.object({
+  status: z.enum(['valid', 'invalid', 'unassessed']),
+  validator: z.string(),
+  validatorVersion: z.string(),
+  rules: z.array(z.string()),
+  issues: z.array(assetAnalysisDiagnosticSchema),
+});
+export const modelAnalysisDataSchema = z.object({
+  kind: z.literal('model'),
+  dimensions: z
+    .object({
+      widthMeters: analysisValue,
+      depthMeters: analysisValue,
+      heightMeters: analysisValue,
+      unitSource: z.enum(['format-defined', 'declared', 'assumed', 'unknown']),
+      measurementBasis: z.string(),
+    })
+    .nullable(),
+  meshCount: analysisCount,
+  geometryCount: analysisCount,
+  triangleCount: analysisCount,
+  vertexCount: analysisCount,
+  materialCount: analysisCount,
+  textureCount: analysisCount,
+  textures: z.array(assetTextureInfoSchema),
+});
+export const materialAnalysisDataSchema = materialInfoSchema.extend({
+  kind: z.literal('material'),
+  nodeCount: analysisCount,
+  textureCount: analysisCount,
+  textures: z.array(assetTextureInfoSchema),
+});
+export const lightAnalysisDataSchema = lightInfoSchema.extend({
+  kind: z.literal('light'),
+  luminousFluxLumens: analysisValue.nullable(),
+  efficacyLumensPerWatt: analysisValue.nullable(),
+  beamAngleDegrees: analysisValue.nullable(),
+  fieldAngleDegrees: analysisValue.nullable(),
+  declaredLampFluxLumens: analysisValue.nullable().optional(),
+  downwardFluxLumens: analysisValue.nullable().optional(),
+  upwardFluxLumens: analysisValue.nullable().optional(),
+  metricsTiltDegrees: z.number().optional(),
+  beamAngles: z
+    .array(
+      z.object({
+        horizontalDegrees: z.number(),
+        peakDirectionDegrees: z.number(),
+        peakCandela: analysisValue,
+        beamAngleDegrees: analysisValue.nullable(),
+        fieldAngleDegrees: analysisValue.nullable(),
+        beamAngleStatus: z.enum(['ok', 'no-light', 'no-crossing', 'multiple-lobes']),
+        fieldAngleStatus: z.enum(['ok', 'no-light', 'no-crossing', 'multiple-lobes']),
+      }),
+    )
+    .optional(),
+  metricsStatus: z.enum(['supported', 'unsupported', 'unavailable']),
+});
+export const envmapAnalysisDataSchema = z.object({
+  kind: z.literal('envmap'),
+  widthPixels: analysisCount,
+  heightPixels: analysisCount,
+  format: z.string(),
+  colorSpace: z.string(),
+  projection: z.enum(['equirectangular', 'unknown']),
+  brightnessUnit: z.enum(['relative', 'cd/m2']),
+  calibration: z.string().nullable(),
+  minimumBrightness: analysisValue,
+  maximumBrightness: analysisValue,
+  averageBrightness: analysisValue,
+  percentile01Brightness: analysisValue,
+  percentile99Brightness: analysisValue,
+  dynamicRangeStops: analysisValue.nullable(),
+});
+export const assetAnalysisDataSchema = z.discriminatedUnion('kind', [
+  modelAnalysisDataSchema,
+  materialAnalysisDataSchema,
+  lightAnalysisDataSchema,
+  envmapAnalysisDataSchema,
+]);
+export type AssetAnalysisData = z.infer<typeof assetAnalysisDataSchema>;
+export type ModelAnalysisData = z.infer<typeof modelAnalysisDataSchema>;
+export type MaterialAnalysisData = z.infer<typeof materialAnalysisDataSchema>;
+export type LightAnalysisData = z.infer<typeof lightAnalysisDataSchema>;
+export type EnvmapAnalysisData = z.infer<typeof envmapAnalysisDataSchema>;
+export const assetAnalysisSchema = z
+  .object({
+    schemaVersion: z.literal(1),
+    sourceFileOid: z
+      .string()
+      .length(64)
+      .regex(/^[a-f0-9]+$/),
+    analyzerId: z.string().min(1),
+    analyzerVersion: z.string().min(1),
+    status: z.enum(['pending', 'running', 'succeeded', 'failed', 'unsupported']),
+    analyzedAt: z.iso.datetime().nullable(),
+    data: assetAnalysisDataSchema.nullable(),
+    validation: assetValidationSchema.nullable(),
+    diagnostics: z.array(assetAnalysisDiagnosticSchema),
+  })
+  .superRefine((value, ctx) => {
+    const issue = (message: string, path: string[]) => ctx.addIssue({ code: 'custom', message, path });
+    if (value.status === 'succeeded' && value.data === null) issue('Successful analysis requires data', ['data']);
+    if (value.status === 'pending' || value.status === 'running') {
+      if (value.data !== null) issue('Pending or running analysis cannot contain completed data', ['data']);
+      if (value.analyzedAt !== null)
+        issue('Pending or running analysis cannot have a completion timestamp', ['analyzedAt']);
+    } else if (value.analyzedAt === null) {
+      issue('Completed analysis requires a completion timestamp', ['analyzedAt']);
+    }
+    if (value.validation) {
+      const hasError = value.validation.issues.some((entry) => entry.severity === 'error');
+      if (value.validation.status === 'valid' && hasError)
+        issue('Valid results cannot contain validation errors', ['validation', 'status']);
+      if (value.validation.status === 'invalid' && !hasError)
+        issue('Invalid results require a validation error', ['validation', 'issues']);
+    }
+    if (value.data?.kind === 'envmap' && value.data.brightnessUnit === 'cd/m2' && !value.data.calibration?.trim())
+      issue('Physical brightness units require calibration provenance', ['data', 'calibration']);
+  });
+export type AssetAnalysis = z.infer<typeof assetAnalysisSchema>;
+
+/** Bounded listing payload: scalar facts only; inventories and diagnostics remain on version details. */
+export const assetAnalysisSummaryDataSchema = z.discriminatedUnion('kind', [
+  modelAnalysisDataSchema.omit({ textures: true }),
+  materialAnalysisDataSchema
+    .omit({ textures: true, materials: true, referencedTextures: true, warnings: true })
+    .extend({ materialCount: analysisCount }),
+  lightAnalysisDataSchema.omit({ metadata: true, warnings: true, beamAngles: true }),
+  envmapAnalysisDataSchema,
+]);
+export type AssetAnalysisSummaryData = z.infer<typeof assetAnalysisSummaryDataSchema>;
+export const assetAnalysisSummarySchema = z.object({
+  schemaVersion: z.literal(1),
+  sourceFileOid: z
+    .string()
+    .length(64)
+    .regex(/^[a-f0-9]+$/),
+  analyzerId: z.string().min(1),
+  analyzerVersion: z.string().min(1),
+  status: z.enum(['pending', 'running', 'succeeded', 'failed', 'unsupported']),
+  analyzedAt: z.iso.datetime().nullable(),
+  validationStatus: z.enum(['valid', 'invalid', 'unassessed']).nullable(),
+  errorCount: analysisCount,
+  warningCount: analysisCount,
+  data: assetAnalysisSummaryDataSchema.nullable(),
+});
+export type AssetAnalysisSummary = z.infer<typeof assetAnalysisSummarySchema>;
+
 export const assetSchema = z.object({
   id: z.number().int(),
   name: z.string(),
@@ -89,6 +259,8 @@ export const assetSchema = z.object({
   originalExtension: z.string(),
   fileOid: z.string(),
   thumbnailOid: z.string().nullable().optional(),
+  analysis: assetAnalysisSchema.nullable().optional(),
+  analysisSummary: assetAnalysisSummarySchema.nullable().optional(),
   materialInfo: materialInfoSchema.optional(),
   lightInfo: lightInfoSchema.optional(),
 });
@@ -395,6 +567,9 @@ export const prepareAssetUpload = async (
 };
 
 export const assetVersionResultSchema = z.object({
+  originalExtension: z.string().optional(),
+  analysis: assetAnalysisSchema.nullable().optional(),
+  analysisSummary: assetAnalysisSummarySchema.nullable().optional(),
   description: descriptionSchema.default(''),
   id: z.number().int(),
   assetId: z.number().int(),
