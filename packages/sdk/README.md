@@ -219,3 +219,14 @@ const original = getMediaOriginalUrl(client, {
 Reads accept `@2.1.0`, `@2.1`, `@2`, or `@latest`. Omission means latest. Automatic references select the highest matching numeric version, irrespective of upload time. Each version has `createdByUserId`, `createdByUserName`, and `createdAt`; migrated uploader information may be null. Original files and thumbnails belong to individual versions.
 
 Media URLs use file extensions: `/media/acme/library/chair@2.1.0.glb`, `chair@latest.glb`, or `chair.glb`. Source downloads use their actual extension and `?original=true`, including `.mtlx.zip` for materials. Previous grouped media paths and `/original` paths are removed. Only stable numeric versions are supported initially; custom tags, prereleases, build suffixes, and version ranges are unsupported.
+
+Media helpers accept an optional separate version selector or label:
+
+```ts
+const url = getMediaUrl(client, {
+  params: { orgName: 'acme', projectName: 'demo', assetName: 'chair', version: '1.2.3' },
+  format: 'webp',
+});
+```
+
+The same `params.version` works for original downloads, conversion task requests, and polling/download helpers. Omit it for the current version. Labels are resolved by the server; accepting a label in the SDK does not create a server-side label mapping. `assetName` must be a bare asset name. Embedded references such as `assetName: 'chair@1.2.3'` are rejected; supply `assetName: 'chair', version: '1.2.3'` instead.

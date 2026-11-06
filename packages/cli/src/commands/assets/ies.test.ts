@@ -128,7 +128,7 @@ describe('IES assets executable', () => {
   });
 
   it('downloads the selected IES original with its exact version', async () => {
-    await run(['download', '--asset', 'spotlight@latest', '--output', 'download.ies']);
+    await run(['download', '--asset', 'spotlight', '--version', 'latest', '--output', 'download.ies']);
     expect(decodeURIComponent(requests[0]!.url)).toBe('/assets/acme/lighting/spotlight@latest');
     const mediaUrl = new URL(requests[1]!.url, host);
     expect(mediaUrl.pathname).toBe('/media/acme/lighting/spotlight@1.1.0.ies');

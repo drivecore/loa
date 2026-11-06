@@ -1,6 +1,12 @@
 import * as sdk from '@landofassets/sdk';
 import { defineCommand } from 'yargs-file-commands';
-import { formatOption, getAssetRequiredOption, getOrgOption, getProjectOption } from '../../lib/args.ts';
+import {
+  formatOption,
+  getAssetRequiredOption,
+  getAssetVersionOption,
+  getOrgOption,
+  getProjectOption,
+} from '../../lib/args.ts';
 import { createClient } from '../../lib/client.ts';
 import { getCliDeps } from '../../lib/deps.ts';
 import { logOutput } from '../../lib/output.ts';
@@ -9,8 +15,9 @@ export const command = defineCommand({
   command: 'get',
   describe: 'Get asset details',
   builder: (yargs) =>
-    yargs.options({
+    yargs.version(false).options({
       ...getAssetRequiredOption(),
+      ...getAssetVersionOption(),
       ...getOrgOption(),
       ...getProjectOption(),
       ...formatOption,
@@ -23,7 +30,7 @@ export const command = defineCommand({
       params: {
         orgName: argv.org,
         projectName: argv.project,
-        assetName: argv.asset,
+        assetName: sdk.formatAssetReference(sdk.assetNameSchema.parse(argv.asset), argv.version),
       },
     });
 

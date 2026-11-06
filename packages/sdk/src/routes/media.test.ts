@@ -1,6 +1,12 @@
 import { describe, expect, it } from 'vitest';
 import { createAnonymousClient } from '../client.js';
-import { getMediaOriginalUrl, getMediaUrl, mediaTaskAcceptedSchema, type StartMediaTaskProps } from './media.js';
+import {
+  getMediaOriginalUrl,
+  getMediaUrl,
+  mediaTaskAcceptedSchema,
+  mediaParamsSchema,
+  type StartMediaTaskProps,
+} from './media.js';
 
 const host = 'https://api.example.com';
 const client = createAnonymousClient({ host });
@@ -10,7 +16,7 @@ describe('Media API URL builders', () => {
   it('builds a versioned IES source download URL', () => {
     const url = getMediaOriginalUrl(client, {
       extension: '.ies',
-      params: { ...params, assetName: 'spotlight@1.2.3' },
+      params: { ...params, assetName: 'spotlight', version: '1.2.3' },
       query: { download: true },
     });
     expect(url.pathname).toBe('/media/my-org/my-project/spotlight@1.2.3.ies');
@@ -177,7 +183,7 @@ describe('mediaTaskAcceptedSchema', () => {
 describe('versioned media references', () => {
   it('carries exact and automatic references through all media formats', () => {
     for (const selector of ['1.2.3', '1.2', '1', 'latest']) {
-      const selected = { ...params, assetName: `my-asset@${selector}` };
+      const selected = { ...params, version: selector };
       expect(
         decodeURIComponent(getMediaOriginalUrl(client, { extension: '.glb', params: selected }).pathname),
       ).toContain(`my-asset@${selector}.glb`);
@@ -211,11 +217,34 @@ describe('versioned media references', () => {
 });
 
 it('builds the canonical media URL spellings', () => {
-  for (const assetName of ['media@1.0.0', 'media', 'media@latest']) {
+  for (const version of ['1.0.0', undefined, 'latest']) {
     const url = getMediaUrl(client, {
-      params: { orgName: 'orgName', projectName: 'projectName', assetName },
+      params: { orgName: 'orgName', projectName: 'projectName', assetName: 'media', version },
       format: 'glb',
     });
-    expect(url.toString()).toBe(`${host}/media/orgName/projectName/${assetName}.glb`);
+    expect(url.toString()).toBe(`${host}/media/orgName/projectName/media${version ? `@${version}` : ''}.glb`);
   }
+});
+
+describe('separate media version parameters', () => {
+  it.each(['1', '1.2', '1.2.3', 'latest', 'draft', '1.2.3-beta.1+build'])('builds URLs for selector %s', (version) => {
+    const selected = { ...params, version };
+    expect(getMediaUrl(client, { params: selected, format: 'webp', query: { width: 512 } }).href).toBe(
+      `${host}/media/my-org/my-project/my-asset@${encodeURIComponent(version)}.webp?width=512`,
+    );
+    expect(getMediaOriginalUrl(client, { params: selected, extension: '.mtlx.zip' }).pathname).toBe(
+      `/media/my-org/my-project/my-asset@${encodeURIComponent(version)}.mtlx.zip`,
+    );
+  });
+  it.each([undefined, '1.2.3', '2.0.0'])('rejects embedded asset versions even with version %s', (version) => {
+    expect(() =>
+      getMediaUrl(client, { params: { ...params, assetName: 'my-asset@1.2.3', version }, format: 'glb' }),
+    ).toThrow();
+  });
+  it.each(['', '@latest', '../draft', 'draft/next', 'draft?width=1', 'draft#part'])(
+    'rejects invalid version token %s',
+    (version) => {
+      expect(mediaParamsSchema.safeParse({ ...params, version }).success).toBe(false);
+    },
+  );
 });
