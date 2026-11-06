@@ -1,3 +1,4 @@
+import { resolveAssetInput, withAssetInput } from '../../lib/asset-input.ts';
 import * as sdk from '@landofassets/sdk';
 import { defineCommand } from 'yargs-file-commands';
 import {
@@ -12,20 +13,15 @@ import { createClient } from '../../lib/client.ts';
 import { getCliDeps } from '../../lib/deps.ts';
 import { createAssetFromUpload } from '../../lib/upload.ts';
 export const command = defineCommand({
-  command: 'create',
+  command: 'create [assetReference]',
   describe: 'Create a new asset from a file',
   builder: (yargs) =>
-    yargs.version(false).options({
-      version: { type: 'string', description: 'Initial version (default: 1.0.0)' },
+    withAssetInput(yargs, { version: 'exact', required: false }).options({
       file: {
         alias: 'f',
         type: 'string',
         description: 'Path to file to upload',
         demandOption: true,
-      },
-      asset: {
-        type: 'string',
-        description: 'Asset name',
       },
       type: {
         type: 'string',
@@ -40,9 +36,9 @@ export const command = defineCommand({
       ...metadataOption,
     }),
   handler: async (argv) => {
+    const { assetName, version } = resolveAssetInput(argv, { version: 'exact', required: false });
     const orgName = argv.org;
     const projectName = argv.project;
-    const assetName = argv.asset;
 
     const client = await createClient(getCliDeps(argv));
 
@@ -56,7 +52,7 @@ export const command = defineCommand({
       visibility: argv.visibility,
       shareLicense: argv.license,
       metadata: argv.metadata,
-      version: argv.version,
+      version,
     });
   },
 });

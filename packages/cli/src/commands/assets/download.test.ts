@@ -1,5 +1,5 @@
 import { execFile } from 'node:child_process';
-import { mkdtemp, readFile, readdir, rm } from 'node:fs/promises';
+import { mkdir, mkdtemp, readFile, readdir, rm, writeFile } from 'node:fs/promises';
 import { createServer, type Server } from 'node:http';
 import type { AddressInfo } from 'node:net';
 import { tmpdir } from 'node:os';
@@ -86,12 +86,20 @@ beforeEach(async () => {
   selectedVersion = '1.0.0';
   requests = [];
   extension = '.glb';
+  await mkdir(join(home, '.config', 'loa'), { recursive: true });
+  await writeFile(join(home, '.config', 'loa', 'config.json'), JSON.stringify({ org: 'Org', project: 'Project' }));
 });
 afterEach(async () => rm(home, { recursive: true, force: true }));
-async function run(extra: string[] = [], commandName = 'download') {
+async function run(extra: string[] = [], commandName = 'download', explicitIdentity = true) {
   return promisify(execFile)(
     process.execPath,
-    [cli, 'assets', commandName, '--org', 'Org', '--project', 'Project', '--asset', assetName, ...extra],
+    [
+      cli,
+      'assets',
+      commandName,
+      ...(explicitIdentity ? ['--org', 'Org', '--project', 'Project', '--asset', assetName] : []),
+      ...extra,
+    ],
     {
       cwd: home,
       env: { ...process.env, HOME: home, LOA_HOST: host, LOA_TOKEN: '' },
@@ -139,6 +147,39 @@ describe('separate CLI version selectors', () => {
   it('rejects versions embedded in the asset name', async () => {
     assetName = 'Chair@1.0.0';
     await expect(run()).rejects.toThrow();
+    expect(requests).toEqual([]);
+  });
+});
+
+describe('positional CLI asset references', () => {
+  it('runs thumbnail MyChair with configured org/project defaults', async () => {
+    assetName = 'MyChair';
+    await run(['MyChair'], 'thumbnail', false);
+    expect(requests).toContain('GET /assets/Org/Project/MyChair');
+    expect(requests).toContain('GET /media/Org/Project/MyChair@1.0.0.webp');
+    expect(await readFile(join(home, 'MyChair_thumbnail.png'))).toEqual(bytes);
+  });
+  it('runs a versioned positional download using the exact resolved version', async () => {
+    assetName = 'MyChair';
+    selectedVersion = '2.1.3';
+    await run(['MyChair@2.1'], 'download', false);
+    expect(requests).toContain('GET /assets/Org/Project/MyChair@2.1');
+    expect(requests).toContain('GET /media/Org/Project/MyChair@2.1.3.glb');
+  });
+  it('lets explicit org/project override the configured defaults', async () => {
+    await run(['MyChair', '--org', 'OtherOrg', '--project', 'OtherProject'], 'get', false);
+    expect(requests).toEqual(['GET /assets/OtherOrg/OtherProject/MyChair']);
+  });
+  it.each([
+    ['--asset', 'MyChair'],
+    ['--version', '1.2.3'],
+    ['--asset', 'MyChair', '--version', '1.2.3'],
+  ])('rejects positional input combined with %j', async (...options) => {
+    await expect(run(['MyChair@1.2.3', ...options], 'thumbnail', false)).rejects.toThrow('never both');
+    expect(requests).toEqual([]);
+  });
+  it('rejects versions on whole-asset commands before making requests', async () => {
+    await expect(run(['MyChair@1.2.3'], 'delete', false)).rejects.toThrow('does not accept');
     expect(requests).toEqual([]);
   });
 });

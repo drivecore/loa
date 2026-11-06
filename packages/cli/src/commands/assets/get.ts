@@ -1,28 +1,22 @@
+import { resolveAssetInput, withAssetInput } from '../../lib/asset-input.ts';
 import * as sdk from '@landofassets/sdk';
 import { defineCommand } from 'yargs-file-commands';
-import {
-  formatOption,
-  getAssetRequiredOption,
-  getAssetVersionOption,
-  getOrgOption,
-  getProjectOption,
-} from '../../lib/args.ts';
+import { formatOption, getOrgOption, getProjectOption } from '../../lib/args.ts';
 import { createClient } from '../../lib/client.ts';
 import { getCliDeps } from '../../lib/deps.ts';
 import { logOutput } from '../../lib/output.ts';
 
 export const command = defineCommand({
-  command: 'get',
+  command: 'get [assetReference]',
   describe: 'Get asset details',
   builder: (yargs) =>
-    yargs.version(false).options({
-      ...getAssetRequiredOption(),
-      ...getAssetVersionOption(),
+    withAssetInput(yargs, { version: 'read' }).options({
       ...getOrgOption(),
       ...getProjectOption(),
       ...formatOption,
     }),
   handler: async (argv) => {
+    const { assetName, version: requestedVersion } = resolveAssetInput(argv, { version: 'read' });
     const deps = getCliDeps(argv);
     const client = await createClient(deps);
 
@@ -30,7 +24,7 @@ export const command = defineCommand({
       params: {
         orgName: argv.org,
         projectName: argv.project,
-        assetName: sdk.formatAssetReference(sdk.assetNameSchema.parse(argv.asset), argv.version),
+        assetName: sdk.formatAssetReference(assetName, requestedVersion),
       },
     });
 

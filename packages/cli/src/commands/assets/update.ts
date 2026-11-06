@@ -1,3 +1,4 @@
+import { resolveAssetInput, withAssetInput } from '../../lib/asset-input.ts';
 import * as sdk from '@landofassets/sdk';
 import { defineCommand } from 'yargs-file-commands';
 import {
@@ -14,15 +15,10 @@ import { getCliDeps } from '../../lib/deps.ts';
 import { logOutput } from '../../lib/output.ts';
 
 export const command = defineCommand({
-  command: 'update',
+  command: 'update [assetReference]',
   describe: 'Update asset',
   builder: (yargs) =>
-    yargs.options({
-      asset: {
-        type: 'string',
-        description: 'Asset name',
-        demandOption: true,
-      },
+    withAssetInput(yargs).options({
       newName: {
         type: 'string',
         description: 'New asset name',
@@ -36,6 +32,7 @@ export const command = defineCommand({
       ...formatOption,
     }),
   handler: async (argv) => {
+    const { assetName } = resolveAssetInput(argv);
     const deps = getCliDeps(argv);
     const client = await createClient(deps);
 
@@ -43,7 +40,7 @@ export const command = defineCommand({
       params: {
         orgName: argv.org,
         projectName: argv.project,
-        assetName: argv.asset,
+        assetName,
       },
       body: {
         name: argv.newName,
