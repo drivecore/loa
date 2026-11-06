@@ -1,9 +1,9 @@
-import { getAsset, formatAssetReference, parseAssetReference } from '@landofassets/sdk';
+import { getAsset, assetNameSchema, formatAssetReference } from '@landofassets/sdk';
 import { writeFile } from 'node:fs/promises';
 import type { Readable } from 'node:stream';
 import { getMedia, getMediaOriginalUrl, startMediaTask, waitForTaskCompletion } from '@landofassets/sdk';
 import { defineCommand } from 'yargs-file-commands';
-import { getOrgOption, getProjectOption } from '../../lib/args.ts';
+import { getAssetVersionOption, getOrgOption, getProjectOption } from '../../lib/args.ts';
 import { createClient } from '../../lib/client.ts';
 import { getCliDeps } from '../../lib/deps.ts';
 
@@ -15,7 +15,7 @@ export const command = defineCommand({
   command: 'download',
   describe: 'Download asset file',
   builder: (yargs) =>
-    yargs.options({
+    yargs.version(false).options({
       asset: {
         type: 'string',
         description: 'Asset name',
@@ -31,6 +31,7 @@ export const command = defineCommand({
         type: 'string',
         description: 'Output file path (defaults to asset filename)',
       },
+      ...getAssetVersionOption(),
       ...getOrgOption(),
       ...getProjectOption(),
     }),
@@ -38,21 +39,24 @@ export const command = defineCommand({
     const debugCliTasks = process.env.DEBUG_CLI_ASSET_TASKS === '1' || process.env.DEBUG_CLI_ASSET_TASKS === 'true';
     const orgName = argv.org;
     const projectName = argv.project;
-    let assetName = argv.asset;
+    const assetName = assetNameSchema.parse(argv.asset);
     const format = argv.format;
 
     const client = await createClient(getCliDeps(argv));
     const selected = await getAsset(client, {
-      params: { orgName: argv.org, projectName: argv.project, assetName: argv.asset },
+      params: {
+        orgName: argv.org,
+        projectName: argv.project,
+        assetName: formatAssetReference(assetNameSchema.parse(argv.asset), argv.version),
+      },
     });
-    const pinnedAssetName = formatAssetReference(parseAssetReference(argv.asset).assetName, selected.version);
-    assetName = pinnedAssetName;
+    const version = selected.version;
 
     let fileData: Readable;
     let filename: string;
 
     if (format) {
-      const params = { orgName, projectName, assetName };
+      const params = { orgName, projectName, assetName, version };
       const typedFormat = format;
       if (debugCliTasks) {
         console.log('[cli assets download] startMediaTask', {
@@ -129,7 +133,7 @@ export const command = defineCommand({
       }
       const url = getMediaOriginalUrl(client, {
         extension: selected.originalExtension,
-        params: { orgName, projectName, assetName },
+        params: { orgName, projectName, assetName, version },
         query: { download: true },
       });
       const result = await client.axios.get(url.toString(), { responseType: 'stream' });

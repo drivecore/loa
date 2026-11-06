@@ -3,7 +3,7 @@ import { type ApiClient, parseResult } from '../client.js';
 import { buildPath } from '../lib/buildPath.js';
 import { Enums } from '../lib/enums.js';
 import { fetchBinary } from '../lib/fetchBinary.js';
-import { assetReferenceParamsSchema, booleanPropSchema } from '../lib/schemas.js';
+import { assetParamsSchema, booleanPropSchema } from '../lib/schemas.js';
 import {
   type BinaryResponse,
   type BinaryResponseType,
@@ -39,8 +39,19 @@ function extractFilenameFromContentDisposition(contentDisposition: string | unde
 // Path pattern: /media/:orgName/:projectName/:assetName.:extension
 // ---------------------------------------------------------------------------
 
-export const mediaParamsSchema = assetReferenceParamsSchema;
+/** A selector is an opaque URL token here; the server resolves numeric versions or labels. */
+export const mediaVersionSchema = z
+  .string()
+  .min(1)
+  .max(128)
+  .regex(/^[a-zA-Z0-9][a-zA-Z0-9._+-]*$/);
+export const mediaParamsSchema = assetParamsSchema.extend({ version: mediaVersionSchema.optional() });
 export type MediaParams = z.infer<typeof mediaParamsSchema>;
+
+function mediaPathParams(input: MediaParams) {
+  const { version, ...params } = mediaParamsSchema.parse(input);
+  return { ...params, assetName: version === undefined ? params.assetName : `${params.assetName}@${version}` };
+}
 
 // --- original ---
 
@@ -61,7 +72,7 @@ export const getMediaOriginalUrl = (
     .parse(props.extension);
   const path = buildPath(
     `/media/$orgName/$projectName/$assetName${extension.toLowerCase()}`,
-    mediaParamsSchema.parse(props.params),
+    mediaPathParams(props.params),
   );
   return makeUrl(client.host, path.replaceAll('%40', '@'), { ...props.query, original: true });
 };
@@ -250,7 +261,7 @@ export type StartMediaTaskProps =
  */
 export const getMediaUrl = (client: ApiClient, props: MediaUrlProps): URL => {
   const extension = props.format === 'ultrahdr' ? 'ultrahdr.jpg' : props.format;
-  const path = buildPath(`/media/$orgName/$projectName/$assetName.${extension}`, mediaParamsSchema.parse(props.params));
+  const path = buildPath(`/media/$orgName/$projectName/$assetName.${extension}`, mediaPathParams(props.params));
   return makeUrl(client.host, path.replaceAll('%40', '@'), props.query);
 };
 

@@ -1,8 +1,8 @@
-import { getAsset, formatAssetReference, parseAssetReference } from '@landofassets/sdk';
+import { getAsset, assetNameSchema, formatAssetReference } from '@landofassets/sdk';
 import { writeFile } from 'node:fs/promises';
 import { getMedia, startMediaTask, waitForTaskCompletion } from '@landofassets/sdk';
 import { defineCommand } from 'yargs-file-commands';
-import { getOrgOption, getProjectOption } from '../../lib/args.ts';
+import { getAssetVersionOption, getOrgOption, getProjectOption } from '../../lib/args.ts';
 import { createClient } from '../../lib/client.ts';
 import { getCliDeps } from '../../lib/deps.ts';
 
@@ -10,7 +10,7 @@ export const command = defineCommand({
   command: 'thumbnail',
   describe: 'Download asset thumbnail',
   builder: (yargs) =>
-    yargs.options({
+    yargs.version(false).options({
       asset: {
         type: 'string',
         description: 'Asset name',
@@ -29,6 +29,7 @@ export const command = defineCommand({
         type: 'string',
         description: 'Output file path (defaults to asset filename)',
       },
+      ...getAssetVersionOption(),
       ...getOrgOption(),
       ...getProjectOption(),
     }),
@@ -36,14 +37,18 @@ export const command = defineCommand({
     const debugCliTasks = process.env.DEBUG_CLI_ASSET_TASKS === '1' || process.env.DEBUG_CLI_ASSET_TASKS === 'true';
     const client = await createClient(getCliDeps(argv));
     const selected = await getAsset(client, {
-      params: { orgName: argv.org, projectName: argv.project, assetName: argv.asset },
+      params: {
+        orgName: argv.org,
+        projectName: argv.project,
+        assetName: formatAssetReference(assetNameSchema.parse(argv.asset), argv.version),
+      },
     });
-    const pinnedAssetName = formatAssetReference(parseAssetReference(argv.asset).assetName, selected.version);
 
     const params = {
       orgName: argv.org,
       projectName: argv.project,
-      assetName: pinnedAssetName,
+      assetName: selected.name,
+      version: selected.version,
     };
     const start = await startMediaTask(client, {
       params,

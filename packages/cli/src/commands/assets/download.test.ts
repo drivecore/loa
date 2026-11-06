@@ -16,10 +16,13 @@ let host: string;
 let home: string;
 let assetName: string;
 let extension: string;
+let selectedVersion: string;
+let requests: string[];
 
 beforeAll(async () => {
   server = createServer((req, res) => {
-    const path = new URL(req.url!, host).pathname;
+    const path = decodeURIComponent(new URL(req.url!, host).pathname);
+    requests.push(`${req.method} ${path}`);
     if (path.startsWith('/assets/')) {
       res.writeHead(200, { 'Content-Type': 'application/json' });
       res.end(
@@ -44,7 +47,7 @@ beforeAll(async () => {
           updatedAt: '2026-11-05T00:00:00.000Z',
           archived: false,
           metadata: '',
-          version: '1.0.0',
+          version: selectedVersion,
           latestVersion: '1.0.0',
           versionId: 1,
           originalExtension: extension,
@@ -80,13 +83,15 @@ afterAll(
 beforeEach(async () => {
   home = await mkdtemp(join(tmpdir(), 'loa-asset-filename-'));
   assetName = 'Chair';
+  selectedVersion = '1.0.0';
+  requests = [];
   extension = '.glb';
 });
 afterEach(async () => rm(home, { recursive: true, force: true }));
-async function run(extra: string[] = []) {
+async function run(extra: string[] = [], commandName = 'download') {
   return promisify(execFile)(
     process.execPath,
-    [cli, 'assets', 'download', '--org', 'Org', '--project', 'Project', '--asset', assetName, ...extra],
+    [cli, 'assets', commandName, '--org', 'Org', '--project', 'Project', '--asset', assetName, ...extra],
     {
       cwd: home,
       env: { ...process.env, HOME: home, LOA_HOST: host, LOA_TOKEN: '' },
@@ -116,5 +121,24 @@ describe('asset download local filenames', () => {
     extension = '.mtlx.zip';
     await run();
     expect(await readFile(join(home, 'Chair.mtlx.zip'))).toEqual(bytes);
+  });
+});
+
+describe('separate CLI version selectors', () => {
+  it.each(['download', 'thumbnail'])('pins %s to the resolved version', async (commandName) => {
+    selectedVersion = '2.1.3';
+    await run(['--version', '2.1'], commandName);
+    expect(requests).toContain('GET /assets/Org/Project/Chair@2.1');
+    expect(requests).toContain(`GET /media/Org/Project/Chair@2.1.3.${commandName === 'thumbnail' ? 'webp' : 'glb'}`);
+  });
+  it('uses the selector for asset metadata reads', async () => {
+    selectedVersion = '2.1.3';
+    await run(['--version', '2.1.3', '--format', 'json'], 'get');
+    expect(requests).toEqual(['GET /assets/Org/Project/Chair@2.1.3']);
+  });
+  it('rejects versions embedded in the asset name', async () => {
+    assetName = 'Chair@1.0.0';
+    await expect(run()).rejects.toThrow();
+    expect(requests).toEqual([]);
   });
 });
