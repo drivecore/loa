@@ -2,28 +2,22 @@ import { getConfig } from './config.ts';
 import type { CliDeps } from './deps.ts';
 
 /**
- * Module-level cache for config defaults
+ * Defaults refreshed at invocation start and read synchronously by option builders.
  */
 let cachedDefaults: {
   org?: string;
   project?: string;
 } = {};
 
-let initialized: boolean = false;
-
-export async function initializeConfigDefaults(deps: CliDeps): Promise<void> {
-  if (initialized) {
-    return;
-  }
+export async function initializeConfigDefaults(deps: Pick<CliDeps, 'persistentConfig' | 'envVars'>): Promise<void> {
   try {
     const config = await getConfig(deps);
     cachedDefaults = {
       org: config.org,
       project: config.project,
     };
-    initialized = true;
   } catch {
-    initialized = true;
+    cachedDefaults = {};
   }
 }
 

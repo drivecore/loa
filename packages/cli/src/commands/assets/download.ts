@@ -1,9 +1,10 @@
-import { getAsset, assetNameSchema, formatAssetReference } from '@landofassets/sdk';
+import { resolveAssetInput, withAssetInput } from '../../lib/asset-input.ts';
+import { getAsset, formatAssetReference } from '@landofassets/sdk';
 import { writeFile } from 'node:fs/promises';
 import type { Readable } from 'node:stream';
 import { getMedia, getMediaOriginalUrl, startMediaTask, waitForTaskCompletion } from '@landofassets/sdk';
 import { defineCommand } from 'yargs-file-commands';
-import { getAssetVersionOption, getOrgOption, getProjectOption } from '../../lib/args.ts';
+import { getOrgOption, getProjectOption } from '../../lib/args.ts';
 import { createClient } from '../../lib/client.ts';
 import { getCliDeps } from '../../lib/deps.ts';
 
@@ -12,15 +13,10 @@ function getDownloadFilename(assetName: string, extension: string): string {
 }
 
 export const command = defineCommand({
-  command: 'download',
+  command: 'download [assetReference]',
   describe: 'Download asset file',
   builder: (yargs) =>
-    yargs.version(false).options({
-      asset: {
-        type: 'string',
-        description: 'Asset name',
-        demandOption: true,
-      },
+    withAssetInput(yargs, { version: 'read' }).options({
       format: {
         type: 'string',
         choices: ['glb', 'usdz', 'blend', 'fcstd', 'iges', 'step'] as const,
@@ -31,15 +27,14 @@ export const command = defineCommand({
         type: 'string',
         description: 'Output file path (defaults to asset filename)',
       },
-      ...getAssetVersionOption(),
       ...getOrgOption(),
       ...getProjectOption(),
     }),
   handler: async (argv) => {
+    const { assetName, version: requestedVersion } = resolveAssetInput(argv, { version: 'read' });
     const debugCliTasks = process.env.DEBUG_CLI_ASSET_TASKS === '1' || process.env.DEBUG_CLI_ASSET_TASKS === 'true';
     const orgName = argv.org;
     const projectName = argv.project;
-    const assetName = assetNameSchema.parse(argv.asset);
     const format = argv.format;
 
     const client = await createClient(getCliDeps(argv));
@@ -47,7 +42,7 @@ export const command = defineCommand({
       params: {
         orgName: argv.org,
         projectName: argv.project,
-        assetName: formatAssetReference(assetNameSchema.parse(argv.asset), argv.version),
+        assetName: formatAssetReference(assetName, requestedVersion),
       },
     });
     const version = selected.version;

@@ -1,21 +1,17 @@
-import { getAsset, assetNameSchema, formatAssetReference } from '@landofassets/sdk';
+import { resolveAssetInput, withAssetInput } from '../../lib/asset-input.ts';
+import { getAsset, formatAssetReference } from '@landofassets/sdk';
 import { writeFile } from 'node:fs/promises';
 import { getMedia, startMediaTask, waitForTaskCompletion } from '@landofassets/sdk';
 import { defineCommand } from 'yargs-file-commands';
-import { getAssetVersionOption, getOrgOption, getProjectOption } from '../../lib/args.ts';
+import { getOrgOption, getProjectOption } from '../../lib/args.ts';
 import { createClient } from '../../lib/client.ts';
 import { getCliDeps } from '../../lib/deps.ts';
 
 export const command = defineCommand({
-  command: 'thumbnail',
+  command: 'thumbnail [assetReference]',
   describe: 'Download asset thumbnail',
   builder: (yargs) =>
-    yargs.version(false).options({
-      asset: {
-        type: 'string',
-        description: 'Asset name',
-        demandOption: true,
-      },
+    withAssetInput(yargs, { version: 'read' }).options({
       width: {
         type: 'number',
         description: 'Thumbnail width',
@@ -29,18 +25,18 @@ export const command = defineCommand({
         type: 'string',
         description: 'Output file path (defaults to asset filename)',
       },
-      ...getAssetVersionOption(),
       ...getOrgOption(),
       ...getProjectOption(),
     }),
   handler: async (argv) => {
+    const { assetName, version: requestedVersion } = resolveAssetInput(argv, { version: 'read' });
     const debugCliTasks = process.env.DEBUG_CLI_ASSET_TASKS === '1' || process.env.DEBUG_CLI_ASSET_TASKS === 'true';
     const client = await createClient(getCliDeps(argv));
     const selected = await getAsset(client, {
       params: {
         orgName: argv.org,
         projectName: argv.project,
-        assetName: formatAssetReference(assetNameSchema.parse(argv.asset), argv.version),
+        assetName: formatAssetReference(assetName, requestedVersion),
       },
     });
 
@@ -61,7 +57,7 @@ export const command = defineCommand({
     });
     if (debugCliTasks) {
       console.log('[cli assets thumbnail] startMediaTask', {
-        asset: argv.asset,
+        asset: assetName,
         status: start.status,
         taskId: start.taskId ?? null,
       });
@@ -89,7 +85,7 @@ export const command = defineCommand({
     }
 
     if (debugCliTasks) {
-      console.log('[cli assets thumbnail] fetching media', { asset: argv.asset, format: 'webp' });
+      console.log('[cli assets thumbnail] fetching media', { asset: assetName, format: 'webp' });
     }
     const thumbnailData = await getMedia(
       client,
@@ -104,7 +100,7 @@ export const command = defineCommand({
       'stream',
     );
 
-    const outputPath = argv.output ?? `${argv.asset}_thumbnail.png`;
+    const outputPath = argv.output ?? `${assetName}_thumbnail.png`;
     if (debugCliTasks) {
       console.log('[cli assets thumbnail] writing output', { outputPath });
     }

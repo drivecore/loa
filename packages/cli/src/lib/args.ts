@@ -14,27 +14,6 @@ export type FormatType = (typeof FormatType)[number];
  */
 
 /**
- * Get asset option definition (required).
- * @returns Option object that can be spread into .options()
- */
-export const getAssetRequiredOption = () =>
-  ({
-    asset: {
-      type: 'string' as const,
-      description: 'Asset name',
-      demandOption: true as const,
-    },
-  }) as const;
-
-/** Version selector for asset reads; omitted selects the current version. */
-export const getAssetVersionOption = () => ({
-  version: {
-    type: 'string' as const,
-    description: 'Version selector (major, major.minor, exact version, or latest)',
-  },
-});
-
-/**
  * Get asset visibility option definition (optional).
  * @returns Option object that can be spread into .options()
  */

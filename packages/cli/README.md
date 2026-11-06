@@ -247,3 +247,25 @@ loa files download <oid> --output generated.glb
 The OID must be 64 lowercase hexadecimal characters. `--output` (`-o`) defaults to the OID in the current directory. Downloads stream to disk, refuse to overwrite existing files, and remove incomplete output if downloading fails. Parent directories must already exist.
 
 This uses the configured host (`LOA_HOST` or `loa config set --host`) and the existing anonymous `/files/:oid` endpoint. Anyone who knows an OID can download that file; login and project permissions are not checked by that endpoint. Stored credentials are not sent by this command.
+
+## Positional asset references
+
+Asset-targeting commands accept either one positional `asset[@version]` or explicit `--asset` / `--version` options. Never combine the two forms, even when values agree. `--asset` always takes a bare name.
+
+```sh
+loa config set --org acme --project library
+loa assets thumbnail MyChair
+loa assets thumbnail MyChair@2.1.3
+loa assets thumbnail --asset MyChair --version 2.1.3
+loa assets download MyChair@2.1 --format glb
+loa assets get MyChair@latest
+loa assets upload MyChair@2.2.0 --file chair.glb
+loa assets create NewChair@1.0.0 --file chair.glb --visibility PRIVATE
+loa assets versions MyChair
+loa assets update MyChair --description "Updated description"
+loa assets delete MyChair
+loa comments list MyChair
+loa comments edit 123 MyChair --text "Updated comment"
+```
+
+Org and project use the existing configured defaults; explicit `--org` and `--project` override them. Reads (`get`, `download`, `thumbnail`) accept selectors. Publications (`create`, `upload`) require exact `major.minor.patch` versions when provided. `create` still infers a name from the file when neither form specifies one. Whole-asset commands (`update`, `delete`, `versions`, and comments) accept only bare names and reject versions.
