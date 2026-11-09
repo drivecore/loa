@@ -1,0 +1,62 @@
+{
+  "name": "@landofassets/runtime",
+  "version": "1.5.0",
+  "description": "Runtime asset resolution and Vite integration for Land of Assets",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/drivecore/loa.git",
+    "directory": "packages/runtime"
+  },
+  "files": [
+    "dist/index.*",
+    "dist/node.*",
+    "dist/types.*",
+    "dist/vite.*",
+    "README.md",
+    "virtual.d.ts"
+  ],
+  "type": "module",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    },
+    "./node": {
+      "types": "./dist/node.d.ts",
+      "default": "./dist/node.js"
+    },
+    "./vite": {
+      "types": "./dist/vite.d.ts",
+      "default": "./dist/vite.js"
+    },
+    "./virtual": {
+      "types": "./virtual.d.ts"
+    }
+  },
+  "publishConfig": {
+    "access": "public",
+    "registry": "https://registry.npmjs.org/"
+  },
+  "scripts": {
+    "tsc": "tsc",
+    "build": "tsc"
+  },
+  "devDependencies": {
+    "@types/node": "^22.20.5",
+    "vite": "^8.3.5"
+  },
+  "peerDependencies": {
+    "vite": ">=6 <9"
+  },
+  "peerDependenciesMeta": {
+    "vite": {
+      "optional": true
+    }
+  },
+  "engines": {
+    "node": ">=22.12.0"
+  }
+}

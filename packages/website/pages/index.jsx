@@ -5,6 +5,16 @@ import styles from './index.module.css';
 
 const paths = [
   {
+    kicker: 'ASSET MANAGER',
+    title: 'Keep asset selections with your code',
+    body: 'Pin immutable asset versions in Git, load from the cloud, or pull once for local development and offline builds.',
+    code: `loa add acme/furniture/chair@2.3.0 --as chair
+loa pull
+loa resolve --mode local`,
+    to: '/asset-manager',
+    link: 'Asset manager overview',
+  },
+  {
     kicker: 'CLI',
     title: 'Script it from your terminal',
     body: 'Upload, download, and manage assets from your shell or CI with the loa command.',
@@ -64,16 +74,16 @@ export default function Home() {
             <em>CLI, SDK, or REST API.</em>
           </h1>
           <p className={styles.lead}>
-            Upload, convert, and deliver 3D models, materials, and environments programmatically. Create an API token in
-            the <a href="https://landofassets.com">Land of Assets dashboard</a>, pick the tool that fits your workflow,
-            and you are a few lines from your first asset.
+            Keep asset versions with your code, then upload, convert, and deliver models, materials, and environments.
+            Create an API token in the <a href="https://landofassets.com">Land of Assets dashboard</a>, pick the tool
+            that fits your workflow, and you are a few lines from your first asset.
           </p>
           <div className={styles.actions}>
             <Link className={styles.primary} href="https://landofassets.com/signup">
               Sign up for free <span aria-hidden="true">→</span>
             </Link>
-            <Link className={styles.secondary} to="/api">
-              Browse the REST API <span aria-hidden="true">→</span>
+            <Link className={styles.secondary} to="/asset-manager">
+              Explore the asset manager <span aria-hidden="true">→</span>
             </Link>
           </div>
         </div>

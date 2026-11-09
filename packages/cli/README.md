@@ -30,6 +30,35 @@ loa assets list --org my-org --project my-project
 
 > **Tip**: Use `loa <command> --help` or `loa <category> --help` to see available commands and their descriptions. For example, `loa auth --help` or `loa assets --help`.
 
+## Asset manager
+
+Keep consuming asset selections in Git with `loa.json` and `loa-lock.json`. LoA stores immutable native versions; Git branches and merges the selections alongside your code.
+
+```sh
+loa add acme/furniture/chair@2.3.0 --as chair
+loa add https://example.com/lights/downlight.ies --as downlight
+loa add ../brand/logo.png --as logo
+loa pull
+loa resolve --mode local
+```
+
+Native refs are hash-verified and downloaded into a global store, then materialized in `loa_assets/` using clone, hardlink, or copy. Direct HTTP(S) URLs skip integrity checks and global caching; `pull` downloads them into project-local `asset_cache/`, and `pull --refresh` fetches them again. `file:` entries load live from their manifest-relative location and are never copied, hashed, or changed by `pull`. Adding any source does not download its bytes.
+
+| Command                                                           | Purpose                                                                   |
+| ----------------------------------------------------------------- | ------------------------------------------------------------------------- |
+| `loa add <source> [--as alias]`                                   | Add a native ref, direct URL, or local file; update the manifest and lock |
+| `loa remove <alias>`                                              | Remove a declaration and its lock entry                                   |
+| `loa pull [--frozen-lockfile] [--refresh]`                        | Materialize locked assets; frozen mode requires matching declarations     |
+| `loa update [alias] [--latest]`                                   | Re-resolve selectors, or update pins to latest                            |
+| `loa outdated`                                                    | Show native selections with newer versions                                |
+| `loa publish <file> --to <org/project/asset> --version <version>` | Publish an immutable version; server validates self-contained resources   |
+| `loa resolve --mode <mode>`                                       | Write `loa-resolution.json` from the lockfile                             |
+| `loa store <command>`                                             | Inspect and maintain the native global store                              |
+
+Ignore `loa_assets/`, `asset_cache/`, and generated `loa-resolution.json`; commit the manifest and lockfile. Only native assets have reproducible verified bytes. External URLs and live files remain mutable even with `--frozen-lockfile`.
+
+Use `@landofassets/runtime` to resolve aliases in an application and `@landofassets/runtime/vite` to serve or bundle local assets. The [asset manager overview](../website/docs/asset-manager.md) covers runtime integration, workspaces, deployment modes, and the source model.
+
 ## Commands
 
 ### Authentication
@@ -78,15 +107,6 @@ loa assets update --org <org> --project <project> --asset <slug> # Update an ass
 loa assets delete --org <org> --project <project> --asset <slug> # Delete an asset
 loa assets download --org <org> --project <project> --asset <slug> # Download asset files
 loa assets thumbnail --org <org> --project <project> --asset <slug> # Get asset thumbnail
-```
-
-### Asset Versions
-
-```bash
-loa versions list --org <org> --project <project> --asset <asset>     # List versions
-loa versions get --org <org> --project <project> --asset <asset> --version <id> # Get version
-loa versions create --org <org> --project <project> --asset <asset>   # Create version
-loa versions delete --org <org> --project <project> --asset <asset> --version <id> # Delete version
 ```
 
 ### Members
@@ -187,10 +207,11 @@ To clear defaults, use `loa config clear --org` or `loa config clear --project`.
 
 - `LOA_HOST` - Override the API host
 - `LOA_TOKEN` - Provide an API token for authentication
+- `LOA_STORE_DIR` - Override the shared native asset store location
 
 ## Requirements
 
-- Node.js >= 23.0.0
+- Node.js >= 22.12.0
 
 ## License
 

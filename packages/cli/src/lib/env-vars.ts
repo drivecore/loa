@@ -1,6 +1,6 @@
 import type { Config } from '../index.ts';
 
-export type EnvVarName = 'LOA_HOST' | 'LOA_TOKEN';
+export type EnvVarName = 'LOA_HOST' | 'LOA_TOKEN' | 'LOA_STORE_DIR';
 
 export type EnvVars = {
   get: (key: EnvVarName) => string | undefined;

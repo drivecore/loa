@@ -1,0 +1,315 @@
+import { execFile } from 'node:child_process';
+import { createHash } from 'node:crypto';
+import { chmod, mkdtemp, readFile, readdir, rm, writeFile } from 'node:fs/promises';
+import { createServer, type Server } from 'node:http';
+import type { AddressInfo } from 'node:net';
+import { tmpdir } from 'node:os';
+import { join } from 'node:path';
+import { fileURLToPath } from 'node:url';
+import { promisify } from 'node:util';
+import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it } from 'vitest';
+import { nativeHashHex, relativeAssetPath, type NativeAsset, type UrlAsset } from '@landofassets/runtime/node';
+import { loadProject } from './project.ts';
+import { contentPath, pruneStore, pullAsset, registerProject, verifyStore } from './store.ts';
+
+const executable = fileURLToPath(new URL('../../../dist/bin/loa.js', import.meta.url));
+const nativeBytes = Buffer.from('native immutable bytes');
+const oid = createHash('sha256').update(nativeBytes).digest('hex');
+let server: Server;
+let host: string;
+let root: string;
+let store: string;
+let requests: { path: string; auth?: string }[];
+let urlBytes: string;
+let serveCorrupt: boolean;
+let latest: string;
+let failDownloads: boolean;
+let assetMissing: boolean;
+let rejectPublication: boolean;
+let uploadBytes: Buffer | undefined;
+let publication: Record<string, unknown> | undefined;
+
+function assetResponse(version: string) {
+  return {
+    id: 1,
+    name: 'chair',
+    type: 'MODEL',
+    visibility: 'PUBLIC',
+    projectId: 1,
+    projectName: 'models',
+    orgId: 1,
+    orgName: 'acme',
+    description: '',
+    keywords: '',
+    shareLicense: 'CC_BY',
+    aiUsage: 'UNDISCLOSED',
+    commentMode: 'ENABLED',
+    reported: false,
+    likeCount: 0,
+    shareCount: 0,
+    createdAt: '2026-11-08T00:00:00.000Z',
+    updatedAt: '2026-11-08T00:00:00.000Z',
+    archived: false,
+    metadata: '',
+    version,
+    latestVersion: latest,
+    versionId: 1,
+    fileOid: oid,
+    originalExtension: '.glb',
+  };
+}
+
+async function run(args: string[], environment: Record<string, string> = {}) {
+  return promisify(execFile)(process.execPath, [executable, ...args], {
+    cwd: root,
+    env: {
+      ...process.env,
+      HOME: root,
+      LOA_HOST: host,
+      LOA_STORE_DIR: store,
+      LOA_TOKEN: 'must-not-be-forwarded',
+      ...environment,
+    },
+  });
+}
+
+beforeAll(async () => {
+  server = createServer((request, response) => {
+    const path = decodeURIComponent(request.url!);
+    requests.push({ path, auth: request.headers.authorization });
+    if (request.method === 'POST' || request.method === 'PUT') {
+      const chunks: Buffer[] = [];
+      request.on('data', (chunk: Buffer) => chunks.push(chunk));
+      request.on('end', () => {
+        response.setHeader('Content-Type', 'application/json');
+        if (path === '/auth/refresh-access-token') response.end(JSON.stringify({ accessToken: 'test-access-token' }));
+        else if (path === '/assets/acme/models/prepare-upload')
+          response.end(JSON.stringify({ uploadToken: 'test-upload', uploadUrl: `${host}/upload` }));
+        else if (path === '/upload') {
+          uploadBytes = Buffer.concat(chunks);
+          response.end('{}');
+        } else if (path === '/assets/acme/models' || path === '/assets/acme/models/chair/versions') {
+          publication = JSON.parse(Buffer.concat(chunks).toString());
+          if (rejectPublication) {
+            response.writeHead(400);
+            response.end(JSON.stringify({ message: 'External resources are not allowed' }));
+          } else response.end(JSON.stringify(assetResponse(publication!.version as string)));
+        } else {
+          response.writeHead(404);
+          response.end('{}');
+        }
+      });
+      return;
+    }
+    if (path.startsWith('/assets/acme/models/chair')) {
+      if (assetMissing) {
+        response.writeHead(404);
+        response.end('{}');
+        return;
+      }
+      const selector = path.split('@')[1];
+      const version = selector === undefined || selector === 'latest' ? latest : selector === '1' ? '1.9.0' : selector;
+      response.setHeader('Content-Type', 'application/json');
+      response.end(JSON.stringify(assetResponse(version)));
+    } else if (path === `/files/${oid}`) {
+      response.writeHead(failDownloads ? 503 : 200);
+      response.end(serveCorrupt ? 'wrong bytes' : nativeBytes);
+    } else if (path === '/external.glb') {
+      response.writeHead(failDownloads ? 503 : 200);
+      response.end(urlBytes);
+    } else if (path === '/interrupted.glb') {
+      response.writeHead(200, { 'Content-Length': 100 });
+      response.write('partial');
+      setTimeout(() => response.destroy(), 5);
+    } else {
+      response.writeHead(404);
+      response.end();
+    }
+  });
+  await new Promise<void>((done) => server.listen(0, '127.0.0.1', done));
+  host = `http://127.0.0.1:${(server.address() as AddressInfo).port}`;
+});
+afterAll(async () => {
+  await new Promise<void>((done) => server.close(() => done()));
+});
+beforeEach(async () => {
+  root = await mkdtemp(join(tmpdir(), 'loa-manager-cli-'));
+  store = join(root, 'store');
+  requests = [];
+  urlBytes = 'external version one';
+  serveCorrupt = false;
+  latest = '1.0.0';
+  failDownloads = false;
+  assetMissing = false;
+  rejectPublication = false;
+  uploadBytes = undefined;
+  publication = undefined;
+});
+afterEach(async () => {
+  await rm(root, { recursive: true, force: true });
+});
+
+describe('asset manager executable', () => {
+  it.each([true, false])(
+    'publishes %s-new assets using authenticated APIs without changing the consuming manifest',
+    async (newAsset) => {
+      assetMissing = newAsset;
+      await writeFile(join(root, 'chair.glb'), 'bytes validated by web service');
+      await run(['publish', './chair.glb', '--to', 'acme/models/chair', '--version', '2.0.0']);
+      expect(uploadBytes?.toString()).toBe('bytes validated by web service');
+      expect(publication).toMatchObject({ version: '2.0.0', uploadToken: 'test-upload' });
+      expect(
+        requests.find((r) => r.path === (newAsset ? '/assets/acme/models' : '/assets/acme/models/chair/versions'))
+          ?.auth,
+      ).toBe('Bearer test-access-token');
+      expect(await readdir(root)).not.toContain('loa.json');
+      expect(requests.find((r) => r.path === '/upload')?.auth).toBeUndefined();
+    },
+  );
+  it('leaves self-contained publication validation to the web service and propagates rejection', async () => {
+    rejectPublication = true;
+    await writeFile(join(root, 'chair.glb'), 'not a self-contained glb');
+    await expect(run(['publish', './chair.glb', '--to', 'acme/models/chair', '--version', '2.0.0'])).rejects.toThrow();
+    expect(uploadBytes?.toString()).toBe('not a self-contained glb');
+    expect(publication?.version).toBe('2.0.0');
+  });
+  it('adds, pulls and resolves a native asset anonymously, then reuses verified bytes offline', async () => {
+    await run(['add', 'acme/models/chair', '--as', 'chair']);
+    expect(requests.map((r) => r.path)).toEqual(['/assets/acme/models/chair']);
+    expect(await readdir(root)).not.toContain('store');
+    await run(['pull', '--frozen-lockfile']);
+    const project = await loadProject(root);
+    const entry = project.lock!.importers['.']!.assets.chair as NativeAsset;
+    expect(await readFile(join(root, relativeAssetPath(entry)))).toEqual(nativeBytes);
+    expect(await readFile(contentPath(store, nativeHashHex(entry.hash)))).toEqual(nativeBytes);
+    expect(requests.every((r) => r.auth === undefined)).toBe(true);
+    requests = [];
+    failDownloads = true;
+    await run(['pull', '--frozen-lockfile'], { LOA_HOST: 'http://127.0.0.1:1' });
+    await run(['resolve', '--mode', 'local']);
+    expect(JSON.parse(await readFile(join(root, 'loa-resolution.json'), 'utf8')).chair).toBe(
+      `/${relativeAssetPath(entry)}`,
+    );
+    expect(requests).toEqual([]);
+    await run(['resolve']);
+    expect(JSON.parse(await readFile(join(root, 'loa-resolution.json'), 'utf8')).chair).toBe(`${host}/files/${oid}`);
+  });
+  it('does not fetch URL additions; pulls only into project cache, reusing until explicit refresh', async () => {
+    await run(['add', `${host}/external.glb`, '--as', 'external']);
+    expect(requests).toEqual([]);
+    await run(['pull']);
+    const entry = (await loadProject(root)).lock!.importers['.']!.assets.external as UrlAsset;
+    const destination = join(root, relativeAssetPath(entry));
+    expect(await readFile(destination, 'utf8')).toBe('external version one');
+    expect(await readdir(root)).not.toContain('store');
+    urlBytes = 'external version two';
+    await run(['pull', '--frozen-lockfile']);
+    expect(requests).toHaveLength(1);
+    expect(await readFile(destination, 'utf8')).toBe('external version one');
+    await run(['pull', '--refresh']);
+    expect(await readFile(destination, 'utf8')).toBe('external version two');
+    expect(requests.every((r) => r.auth === undefined)).toBe(true);
+  });
+  it('keeps file: sources live and pull never reads, hashes, copies or requires them', async () => {
+    await writeFile(join(root, 'chair.glb'), 'original');
+    await run(['add', './chair.glb', '--as', 'chair']);
+    await writeFile(join(root, 'chair.glb'), 'edited live');
+    await run(['pull', '--frozen-lockfile']);
+    expect(await readFile(join(root, 'chair.glb'), 'utf8')).toBe('edited live');
+    await rm(join(root, 'chair.glb'));
+    await run(['pull', '--frozen-lockfile']);
+    expect(requests).toEqual([]);
+    expect(await readdir(root)).not.toContain('store');
+    expect(await readdir(root)).not.toContain('asset_cache');
+    expect(await readdir(root)).not.toContain('loa_assets');
+  });
+  it('updates exact pins only with --latest and reports outdated aliases', async () => {
+    await run(['add', 'acme/models/chair', '--as', 'chair']);
+    latest = '2.0.0';
+    const outdated = await run(['outdated']);
+    expect(JSON.parse(outdated.stdout)).toEqual([{ alias: 'chair', current: '1.0.0', latest: '2.0.0' }]);
+    await run(['update', 'chair']);
+    expect((await loadProject(root)).lock!.importers['.']!.assets.chair).toMatchObject({ version: '1.0.0' });
+    await run(['update', 'chair', '--latest']);
+    expect((await loadProject(root)).manifests['.']!.assets.chair).toBe('acme/models/chair@2.0.0');
+  });
+  it('removes manifest and lock bindings without deleting cached native bytes; prune then removes unused content', async () => {
+    await run(['add', 'acme/models/chair', '--as', 'chair']);
+    await run(['pull']);
+    await run(['remove', 'chair']);
+    expect((await loadProject(root)).manifests['.']!.assets).toEqual({});
+    expect((await loadProject(root)).lock!.importers['.']!.assets).toEqual({});
+    expect((await verifyStore(store)).checked).toBe(1);
+    await run(['store', 'prune']);
+    expect((await verifyStore(store)).checked).toBe(0);
+  });
+  it('rejects altered manifests in frozen mode before fetching or changing files', async () => {
+    await run(['add', `${host}/external.glb`, '--as', 'external']);
+    const project = await loadProject(root);
+    project.manifests['.']!.assets.external = `${host}/other.glb`;
+    await writeFile(join(root, 'loa.json'), JSON.stringify(project.manifests['.']));
+    await expect(run(['pull', '--frozen-lockfile'])).rejects.toThrow();
+    expect(requests).toEqual([]);
+    expect(await readdir(root)).not.toContain('asset_cache');
+  });
+  it('never installs corrupt native downloads and cleans temporary files', async () => {
+    await run(['add', 'acme/models/chair', '--as', 'chair']);
+    serveCorrupt = true;
+    await expect(run(['pull'])).rejects.toThrow();
+    expect((await verifyStore(store)).checked).toBe(0);
+    expect(await readdir(join(store, 'v1/sha256', oid.slice(0, 2)))).toEqual([]);
+    expect(await readdir(root)).not.toContain('loa_assets');
+  });
+  it('detects damaged cached content and repairs it from the registry bytes', async () => {
+    await run(['add', 'acme/models/chair', '--as', 'chair']);
+    await run(['pull']);
+    const cached = contentPath(store, oid);
+    await chmod(cached, 0o644);
+    await writeFile(cached, 'damaged');
+    expect((await verifyStore(store)).corrupt).toEqual([cached]);
+    requests = [];
+    await run(['pull', '--frozen-lockfile']);
+    expect(requests.map((r) => r.path)).toEqual([`/files/${oid}`]);
+    expect((await verifyStore(store)).corrupt).toEqual([]);
+  });
+  it('cleans interrupted direct downloads without poisoning the cache', async () => {
+    await run(['add', `${host}/interrupted.glb`, '--as', 'broken']);
+    await expect(run(['pull'])).rejects.toThrow();
+    expect(await readdir(join(root, 'asset_cache'))).toEqual([]);
+  });
+  it('preserves existing URL downloads when a refresh fails', async () => {
+    await run(['add', `${host}/external.glb`, '--as', 'external']);
+    await run(['pull']);
+    const entry = (await loadProject(root)).lock!.importers['.']!.assets.external as UrlAsset;
+    failDownloads = true;
+    await expect(run(['pull', '--refresh'])).rejects.toThrow();
+    expect(await readFile(join(root, relativeAssetPath(entry)), 'utf8')).toBe('external version one');
+  });
+  it('fails closed on prune when a registered existing project has lost its lock', async () => {
+    await run(['add', 'acme/models/chair', '--as', 'chair']);
+    await run(['pull']);
+    await rm(join(root, 'loa-lock.json'));
+    await expect(pruneStore(store)).rejects.toThrow();
+    expect((await verifyStore(store)).checked).toBe(1);
+  });
+  it('protects cache content referenced by another registered checkout', async () => {
+    await run(['add', 'acme/models/chair', '--as', 'chair']);
+    await run(['pull']);
+    const other = await mkdtemp(join(tmpdir(), 'loa-other-project-'));
+    try {
+      await writeFile(join(other, 'loa-lock.json'), await readFile(join(root, 'loa-lock.json')));
+      await registerProject(store, other);
+      await run(['remove', 'chair']);
+      expect(await pruneStore(store)).toBe(0);
+    } finally {
+      await rm(other, { recursive: true, force: true });
+    }
+  });
+  it('supports concurrent native pulls into the same store without partial objects', async () => {
+    await run(['add', 'acme/models/chair', '--as', 'chair']);
+    const entry = (await loadProject(root)).lock!.importers['.']!.assets.chair!;
+    await Promise.all([pullAsset(entry, root, store), pullAsset(entry, root, store)]);
+    expect((await verifyStore(store)).corrupt).toEqual([]);
+    expect(await readFile(contentPath(store, oid))).toEqual(nativeBytes);
+  });
+});
