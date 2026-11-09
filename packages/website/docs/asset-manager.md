@@ -1,25 +1,25 @@
 ---
 title: Asset manager
 sidebar_position: 1
-description: Keep asset selections in Git, share immutable downloads, and load the same assets from the cloud or a local checkout with the loa CLI.
+description: Keep asset selections in Git and load the same assets from the cloud or a local checkout with the loa CLI.
 ---
 
 # Asset manager
 
-The `loa` CLI manages the assets a codebase consumes. Keep a small manifest and lockfile in Git, publish immutable versions to LoA, and choose whether your application loads those versions remotely or from local files.
+The `loa` CLI manages the assets a codebase consumes. Keep selections in Git, publish immutable versions to LoA, and load those versions from the cloud or a local checkout.
 
-Git owns branches, reviews, and merges. LoA owns published asset versions and their bytes. A feature branch can select a different chair or lighting rig by changing a JSON entry alongside the code that uses it. A consuming repository can use assets from many LoA organizations and projects; it does not need a matching LoA project.
+Git owns branches, reviews, and merges. LoA owns published versions and their bytes. A feature branch can select a different chair or lighting rig alongside the code that uses it. One codebase can consume assets from many LoA organizations and projects; it does not need a matching LoA project.
 
-## Start with a public asset
+## Select assets with your code
 
-Install the CLI, then run these commands from your application's directory. Replace the example reference with a public asset you can access:
+Install the CLI, then [add an asset](./cli/loa-add.md) from your application's directory. Replace the example with a public asset you can access:
 
 ```sh
 npm install -g @landofassets/cli
 loa add acme/furniture/chair@2.3.0 --as chair
 ```
 
-`add` writes `assets.json` and `assets-lock.json`. It resolves the native reference to an exact version and content hash, without downloading the asset file. Commit both files with your code.
+The CLI writes `assets.json` and `assets-lock.json`. Commit both with your code. The manifest says what you want; the lockfile records the resolved versions and native content hashes.
 
 ```json
 {
@@ -30,74 +30,35 @@ loa add acme/furniture/chair@2.3.0 --as chair
 }
 ```
 
-The reference `acme/furniture/chair` is the asset's canonical `org/project/asset` name. `chair` is an alias local to your manifest. The key only names the binding; the value always contains the full source reference. You can use the canonical reference as the key too:
+Keys name bindings used by your code. Values contain the full source, even if you use the canonical `org/project/asset` name as the key.
 
-```json
-{
-  "name": "showroom",
-  "assets": {
-    "acme/furniture/chair": "acme/furniture/chair@2.3.0"
-  }
-}
-```
+## Choose a source
 
-Omit the version when adding an asset to select the current latest version and record an exact pin. Hand-edited manifests can retain selectors such as `acme/furniture/chair@2`, `acme/furniture/chair@2.3`, or `acme/furniture/chair@latest`; the lockfile still records one exact version. Bare values such as `"2.3.0"` are not supported. `latest` means the highest numeric version, not the most recently uploaded file.
+| Source                                               | Behavior                                                                           |
+| ---------------------------------------------------- | ---------------------------------------------------------------------------------- |
+| Native LoA ref, such as `acme/furniture/chair@2.3.0` | An immutable version with a verified content hash and shared global cache          |
+| Direct HTTP(S) URL                                   | Loaded directly or pulled into the project cache, without integrity checks         |
+| Live `file:` reference                               | Loaded from its original location; edits stay live and pulling leaves it untouched |
 
-## Three source types
+Only native LoA versions guarantee pinned bytes. Publish an asset when you need repeatable consumption; use URLs and local files for inputs that may change. See [`loa add`](./cli/loa-add.md) for source syntax, aliases, and version selection.
 
-| Source             | Example manifest value              | Integrity        | What `loa pull` does                                             |
-| ------------------ | ----------------------------------- | ---------------- | ---------------------------------------------------------------- |
-| LoA reference      | `acme/furniture/chair@2.3.0`        | Verifies SHA-256 | Fetches into the shared store and materializes in `asset_cache/` |
-| Direct HTTP(S) URL | `https://example.com/downlight.ies` | Unverified       | Downloads into this project's `asset_cache/`                     |
-| Local file         | `file:../brand/logo.png`            | Unverified, live | Leaves the source file untouched                                 |
+## Work from the cloud or locally
 
-```sh
-loa add https://example.com/downlight.ies --as downlight
-loa add ../brand/logo.png --as logo
-```
-
-Adding a URL records it without fetching it. Every HTTP(S) specifier is a direct URL, including one hosted by a LoA server or containing `@version`. It does not receive native registry resolution, integrity checks, or global caching.
-
-Local files resolve relative to the manifest that declares them. They stay live at that location: edits are visible without pulling, hashing, or updating the lockfile. Do not use the materialized `asset_cache/` directory as an editing workspace; use a `file:` source for files you intend to edit.
-
-Only native LoA versions guarantee pinned bytes. A direct URL may return different bytes later, and a local file reflects its current contents. Publish an asset to LoA when you need verified, repeatable consumption.
-
-## Pull and work offline
+You can load native assets remotely without downloading them first. To work locally, [pull the selected assets](./cli/loa-pull.md):
 
 ```sh
 loa pull
 ```
 
-For native assets, `pull` checks the lockfile, verifies cached or downloaded content, and materializes project files from the global store. It tries a filesystem clone first, then a hardlink, then a copy. A hardlinked project file shares bytes with the store; treat these files as immutable.
-
-All pulled assets live in the project's `asset_cache/`: native files are materialized from the verified global store, while direct URL downloads are stored only in this project folder, with filenames derived from the URL. Existing URL downloads are reused. To fetch their current response again:
-
-```sh
-loa pull --refresh
-```
-
-`file:` entries are never copied or altered by `pull`. An offline checkout using them still needs the referenced files to be present.
-
-Ignore generated local state in Git:
-
-```gitignore
-asset_cache/
-asset-resolution.json
-```
-
-For CI, require a lockfile that already matches the manifests:
-
-```sh
-loa pull --frozen-lockfile
-```
-
-A frozen lockfile prevents dependency resolution changes. It cannot make external URLs or live files immutable. Fully offline loading also requires local decoder/WASM resources and any other application dependencies used by your loaders.
+All pulled files live in the project's gitignored `asset_cache/`. Native files come through the verified global store; direct URL downloads stay project-local. Live files stay at their original locations. The [`pull` reference](./cli/loa-pull.md) covers offline requirements, frozen lockfiles, refreshing URL downloads, and cache behavior.
 
 ## Load assets in an application
 
-The runtime maps aliases to URLs synchronously. It does not choose versions, contact the registry, or read the manifest. The lockfile supplies those decisions before loading begins.
+The runtime maps binding names to URLs before the first load. Your code can use `loa:chair` with three.js loaders or obtain a URL directly with `assets.url('chair')`.
 
 ### Vite and three.js
+
+Install the runtime:
 
 ```sh
 npm install @landofassets/runtime
@@ -114,13 +75,15 @@ export default defineConfig({
 });
 ```
 
+Use `remote` for cloud loading or `local` after pulling to serve local files and include them in a production build.
+
 For TypeScript, include the virtual module declaration in your application's environment declarations:
 
 ```ts
 /// <reference types="@landofassets/runtime/virtual" />
 ```
 
-Then use the generated map:
+Then use the generated map with a loading manager:
 
 ```ts
 import * as THREE from 'three';
@@ -133,34 +96,12 @@ const manager = new THREE.LoadingManager();
 manager.setURLModifier(assets.urlModifier);
 
 new GLTFLoader(manager).load('loa:chair', (gltf) => scene.add(gltf.scene));
-const imageUrl = assets.url('logo');
+const chairUrl = assets.url('chair');
 ```
-
-The modifier passes non-`loa:` URLs through unchanged and reports unknown aliases. Pass the manager to each loader that should resolve asset aliases. Loaders that fetch directly without using the manager can use `assets.url(alias)` instead. The resolver itself does not depend on three.js.
-
-For the Vite plugin, choose the mode explicitly:
-
-| Mode     | Development                                                                      | Production build                                                                   |
-| -------- | -------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------- |
-| `remote` | Native assets and direct URLs load remotely; live files are served by the plugin | Native assets and direct URLs remain remote; live files are emitted into the build |
-| `local`  | Serves pulled native assets, cached URLs, and live files                         | Emits asset files into the build for self-contained deployment                     |
-
-Run `loa pull` before using local mode. Production remote mode keeps deployments small; local builds carry the asset bytes and can run without LoA access. The plugin serves only files declared by the lockfile, including explicitly declared local files outside the project directory.
 
 ### Without Vite
 
-Generate a URL map from the lockfile, preferring locally pulled files wherever they exist:
-
-```sh
-loa resolve
-# Optional overrides:
-loa resolve --mode remote
-loa resolve --mode local
-```
-
-This writes `asset-resolution.json` at the workspace root. The default `auto` mode checks each native asset and direct URL for a pulled file in `asset_cache/`. Present files receive local URLs; absent files keep their remote URLs. Native local files are hash-verified, while direct URL downloads remain unverified. Live `file:` references keep their live serving URLs. The command makes no downloads or registry requests and requires a matching lockfile.
-
-Use `--mode remote` or `--mode local` to force a mode, `--output <file>` to choose another output location, or `--base-url <prefix>` to set the public URL prefix for local assets. Detection happens when you run the command; run it again after pulling or removing local files. Serve the JSON with your application and load it before the first asset request:
+Use [`loa resolve`](./cli/loa-resolve.md) to export `asset-resolution.json`. It prefers locally pulled files where present and remote URLs otherwise. Serve the map with your application, then load it before creating loaders:
 
 ```ts
 import { loadLoaResolver } from '@landofassets/runtime';
@@ -169,25 +110,25 @@ const assets = await loadLoaResolver('/asset-resolution.json');
 const chairUrl = assets.url('chair');
 ```
 
-You can also import a map as JSON and pass it to `createLoaResolver({ resolution })`. In local mode, configure your web server to serve the referenced local asset paths. A `file:` entry is a live filesystem reference and requires an explicit serving or bundling step; the Vite plugin handles that integration.
+See the [`resolve` reference](./cli/loa-resolve.md) for mode overrides, serving local files, and regenerating the map.
 
-## Change asset selections with code
+## Review and change selections
 
-```sh
-loa add acme/furniture/chair@3.0.0 --as chair
-loa outdated
-loa update chair
-loa update chair --latest
-loa remove chair
-```
+Asset selections travel with code branches and reviews. Use the command references for individual operations:
 
-`update` re-resolves the declared selector. An exact version remains exact; `--latest` selects the latest version and updates the manifest pin. Unrelated entries keep their locked versions. Removing an alias removes its declaration and resolution, while leaving reusable store content available.
+| Command                                 | Purpose                                              |
+| --------------------------------------- | ---------------------------------------------------- |
+| [`loa add`](./cli/loa-add.md)           | Select an asset or change an existing binding        |
+| [`loa remove`](./cli/loa-remove.md)     | Remove a binding                                     |
+| [`loa outdated`](./cli/loa-outdated.md) | Find newer published versions                        |
+| [`loa update`](./cli/loa-update.md)     | Update selected versions                             |
+| [`loa publish`](./cli/loa-publish.md)   | Publish an immutable version for consumers to select |
 
-The CLI writes stable, sorted JSON with a trailing newline so reviews show the asset selections that changed. Resolve manifest conflicts in Git, then regenerate the lockfile with `loa pull`. Do not hand-edit generated hashes to resolve a conflict.
+Publishing and selecting are separate actions, so a newly published version can be adopted through a code review. The publish reference covers authentication, versions, and server-side asset validation.
 
 ## Share assets across workspaces
 
-A root manifest can include manifests for levels, areas, or packages:
+Large projects can keep an `assets.json` in each level, area, or package and list their directories in a root manifest:
 
 ```json
 {
@@ -197,46 +138,10 @@ A root manifest can include manifests for levels, areas, or packages:
 }
 ```
 
-Each matching directory contains its own `assets.json` with a name and asset declarations. One `assets-lock.json` at the root records entries by declaring directory, so commands can preserve workspace ownership and relative file paths.
+One root `assets-lock.json` records the combined selections. Each manifest owns its declarations; the runtime uses one shared binding namespace. See [`add`](./cli/loa-add.md), [`remove`](./cli/loa-remove.md), and [`pull`](./cli/loa-pull.md) for workspace command behavior.
 
-Run `add` and `remove` in the workspace whose manifest you want to edit. Pulling from the root materializes the workspace's combined asset set. Runtime aliases share one namespace: duplicate aliases across manifests are rejected. Use distinct aliases such as `lobby-chair` and `bedroom-chair` when needed.
+## Maintain the shared store
 
-## Publish immutable native assets
+The CLI provides [`loa store path`](./cli/loa-store-path.md), [`loa store status`](./cli/loa-store-status.md), and [`loa store prune`](./cli/loa-store-prune.md). Their reference pages describe configuration and maintenance.
 
-Publishing requires authentication and permission to write to the target organization and project:
-
-```sh
-loa auth login
-loa publish ./chair.glb --to acme/furniture/chair --version 3.0.0
-loa add acme/furniture/chair@3.0.0 --as chair
-```
-
-Publication registers a numbered snapshot. An existing version cannot be replaced with different bytes. Publishing does not automatically change the consuming manifest; adding or updating a selection is a separate action that can be reviewed with code.
-
-Self-contained GLB and MaterialX package validation belongs to the web service's publication path, for both initial assets and new versions. The CLI does not inspect or package their dependencies to enforce this rule. GLB resources must be embedded; resources needed by a `.mtlx.zip` material must be packaged safely within its archive, apart from supported standard libraries.
-
-The existing `loa assets create`, `loa assets upload`, and other administrative commands remain available. Asset-manager commands describe what a consuming codebase uses; administrative commands manage the remote catalog.
-
-## Configure and maintain the shared store
-
-```sh
-loa store path
-loa store status
-loa store prune
-```
-
-The default store follows platform cache conventions:
-
-| Platform | Default location                         |
-| -------- | ---------------------------------------- |
-| macOS    | `~/Library/Caches/loa`                   |
-| Linux    | `$XDG_CACHE_HOME/loa`, or `~/.cache/loa` |
-| Windows  | `%LOCALAPPDATA%\loa\Cache`               |
-
-Set `LOA_STORE_DIR` to override the location. Only native LoA bytes belong there. URL downloads stay in their project's `asset_cache/`, and live file sources stay at their original paths.
-
-`status` checks stored bytes against their SHA-256 names. `prune` keeps content referenced by the current lockfiles of projects registered during native pulls. Deleted projects no longer retain entries. If an existing registered project has a missing or malformed lockfile, pruning fails rather than guessing which bytes are unused.
-
-Native references resolve through the configured API host, defaulting to `https://api.landofassets.com`. Use `LOA_HOST` or `loa config set --host <url>` for another host. The lockfile records the resolved host so an environment change does not silently move an existing locked dependency to another registry.
-
-See the [CLI reference](/cli) for command options and the [SDK reference](/sdk) for programmatic catalog and publication APIs.
+See the [CLI reference](/cli) for all commands and the [SDK reference](/sdk) for programmatic catalog and publication APIs.
