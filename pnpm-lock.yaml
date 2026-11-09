@@ -223,6 +223,9 @@ importers:
       '@clidoc/yargs':
         specifier: ^1.1.2
         version: 1.1.2
+      '@landofassets/runtime':
+        specifier: workspace:*
+        version: link:../runtime
       '@landofassets/sdk':
         specifier: workspace:*
         version: link:../sdk
@@ -266,6 +269,15 @@ importers:
       '@types/yargs':
         specifier: ^17.0.35
         version: 17.0.35
+
+  packages/runtime:
+    devDependencies:
+      '@types/node':
+        specifier: ^22.20.5
+        version: 22.20.5
+      vite:
+        specifier: ^8.3.5
+        version: 8.3.5(@types/node@22.20.5)(jiti@2.7.0)(terser@5.51.2)(yaml@2.9.1)
 
   packages/sdk:
     dependencies:

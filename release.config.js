@@ -1,9 +1,9 @@
 import { execFileSync } from 'node:child_process';
 import { resolve } from 'node:path';
 
-// Packages published to npm, in dependency order (sdk first; cli depends on it
-// via workspace:*, which pnpm publish rewrites to a resolved semver range natively).
-const packages = ['packages/sdk', 'packages/cli'];
+// Packages published to npm, in dependency order (runtime and SDK before CLI).
+// pnpm publish rewrites workspace:* to a resolved semver range natively.
+const packages = ['packages/runtime', 'packages/sdk', 'packages/cli'];
 
 export default {
   branches: ['main'],

@@ -1,12 +1,13 @@
 import { readFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { infoFromPackageJson } from '@clidoc/core';
+import { infoFromPackageJson, mergeDocument } from '@clidoc/core';
 import { createDocgenCommand, fromYargsAsync } from '@clidoc/yargs';
 import yargs from 'yargs';
 import { fileCommands } from 'yargs-file-commands';
 import { initializeConfigDefaults } from './lib/config-defaults.ts';
 import { type CliDeps, setCliDeps } from './lib/deps.ts';
+import { assetManagerDocs } from './lib/asset-manager/docs.ts';
 
 // Regex to extract command name from yargs error messages
 const SUBCOMMAND_ERROR_REGEX = /You must specify a (\w+) subcommand/i;
@@ -30,7 +31,9 @@ export async function runCli(argv: string[], deps: CliDeps): Promise<unknown> {
   await initializeConfigDefaults(deps);
 
   const commandModules = await fileCommands({ commandDirs });
-  const docgen = createDocgenCommand(() => fromYargsAsync([...commandModules, docgen], info));
+  const docgen = createDocgenCommand(async () =>
+    mergeDocument(await fromYargsAsync([...commandModules, docgen], info), assetManagerDocs),
+  );
 
   const y = yargs(argv)
     .scriptName('loa')

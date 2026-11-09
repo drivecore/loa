@@ -1,13 +1,25 @@
 # Land of Assets — public modules
 
-This repository holds the public, open-source modules of [Land of Assets](https://landofassets.com): the TypeScript SDK and the `loa` command-line tool. They are the supported way to integrate with the Land of Assets REST API from your own scripts, pipelines, and applications.
+This repository holds the public, open-source modules of [Land of Assets](https://landofassets.com): the TypeScript SDK, the `loa` command-line tool, and the asset runtime. Use them to manage asset selections, load assets in applications, and integrate with the Land of Assets REST API from scripts and pipelines.
 
 The Land of Assets platform itself is closed source. These modules are developed in the open so that integrating is easy, and so you can fix or improve them yourself. **Public pull requests are welcome.**
 
-| Package                             | npm                                                                                                       | Description                               |
-| ----------------------------------- | --------------------------------------------------------------------------------------------------------- | ----------------------------------------- |
-| [`@landofassets/sdk`](packages/sdk) | [![npm](https://img.shields.io/npm/v/@landofassets/sdk)](https://www.npmjs.com/package/@landofassets/sdk) | Typed, functional client for the REST API |
-| [`@landofassets/cli`](packages/cli) | [![npm](https://img.shields.io/npm/v/@landofassets/cli)](https://www.npmjs.com/package/@landofassets/cli) | `loa` command-line interface              |
+| Package                                     | npm                                                                                                               | Description                               |
+| ------------------------------------------- | ----------------------------------------------------------------------------------------------------------------- | ----------------------------------------- |
+| [`@landofassets/sdk`](packages/sdk)         | [![npm](https://img.shields.io/npm/v/@landofassets/sdk)](https://www.npmjs.com/package/@landofassets/sdk)         | Typed, functional client for the REST API |
+| [`@landofassets/cli`](packages/cli)         | [![npm](https://img.shields.io/npm/v/@landofassets/cli)](https://www.npmjs.com/package/@landofassets/cli)         | `loa` command-line interface              |
+| [`@landofassets/runtime`](packages/runtime) | [![npm](https://img.shields.io/npm/v/@landofassets/runtime)](https://www.npmjs.com/package/@landofassets/runtime) | Asset URL resolution and Vite integration |
+
+## Asset manager
+
+The `loa` CLI keeps asset selections in Git with `assets.json` and `assets-lock.json`. Native LoA versions have verified hashes and share a global download store; HTTP(S) URLs use a project-local cache when pulled, and `file:` references stay live. Load remotely or pull the same selections for offline use.
+
+```sh
+loa add acme/furniture/chair@2.3.0 --as chair
+loa pull
+```
+
+Read the [asset manager overview](packages/website/docs/asset-manager.md) for the philosophy, source rules, workspaces, publication, and runtime integration.
 
 ## Quick start
 
@@ -36,7 +48,7 @@ loa assets list --org my-org --project my-project
 
 See the [CLI README](packages/cli/README.md) for every command, or run `loa --help`.
 
-Both packages require Node.js 22 or newer.
+The packages require Node.js 22.12 or newer.
 
 ## Development
 

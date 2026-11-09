@@ -35,7 +35,7 @@ jobs:
       - run: pnpm test
       - name: Verify published packages include dist
         run: |
-          for pkg in packages/sdk packages/cli; do
+          for pkg in packages/runtime packages/sdk packages/cli; do
             (cd "$pkg" && pnpm pack --dry-run) | grep -qx 'dist/index.js' || {
               echo "::error::dist/index.js missing from the packed tarball for $pkg; the publish step would ship a broken package."
               exit 1

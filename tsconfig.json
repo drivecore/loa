@@ -2,5 +2,15 @@
   "extends": "./tsconfig.base.json",
   "files": [],
   "include": [],
-  "references": [{ "path": "./packages/sdk" }, { "path": "./packages/cli" }]
+  "references": [
+    {
+      "path": "./packages/runtime"
+    },
+    {
+      "path": "./packages/sdk"
+    },
+    {
+      "path": "./packages/cli"
+    }
+  ]
 }

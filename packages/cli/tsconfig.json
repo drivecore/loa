@@ -9,5 +9,12 @@
     "allowImportingTsExtensions": true,
     "rewriteRelativeImportExtensions": true
   },
-  "references": [{ "path": "../sdk" }]
+  "references": [
+    {
+      "path": "../sdk"
+    },
+    {
+      "path": "../runtime"
+    }
+  ]
 }
