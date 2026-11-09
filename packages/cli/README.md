@@ -39,7 +39,7 @@ loa add acme/furniture/chair@2.3.0 --as chair
 loa add https://example.com/lights/downlight.ies --as downlight
 loa add ../brand/logo.png --as logo
 loa pull
-loa resolve --mode local
+loa resolve
 ```
 
 Native refs are hash-verified and downloaded into a global store, then materialized in `asset_cache/` using clone, hardlink, or copy. Direct HTTP(S) URLs skip integrity checks and global caching; `pull` downloads them into project-local `asset_cache/`, and `pull --refresh` fetches them again. `file:` entries load live from their manifest-relative location and are never copied, hashed, or changed by `pull`. Adding any source does not download its bytes.
@@ -52,7 +52,7 @@ Native refs are hash-verified and downloaded into a global store, then materiali
 | `loa update [alias] [--latest]`                                   | Re-resolve selectors, or update pins to latest                            |
 | `loa outdated`                                                    | Show native selections with newer versions                                |
 | `loa publish <file> --to <org/project/asset> --version <version>` | Publish an immutable version; server validates self-contained resources   |
-| `loa resolve --mode <mode>`                                       | Write `asset-resolution.json` from the lockfile                           |
+| `loa resolve [--mode auto\|remote\|local]`                        | Write `asset-resolution.json`, preferring locally pulled files by default |
 | `loa store <command>`                                             | Inspect and maintain the native global store                              |
 
 Ignore `asset_cache/` and generated `asset-resolution.json`; commit the manifest and lockfile. Only native assets have reproducible verified bytes. External URLs and live files remain mutable even with `--frozen-lockfile`.

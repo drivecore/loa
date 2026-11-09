@@ -192,7 +192,7 @@ describe('asset manager executable', { timeout: 20_000 }, () => {
       `/${relativeAssetPath(entry)}`,
     );
     expect(requests).toEqual([]);
-    await run(['resolve']);
+    await run(['resolve', '--mode', 'remote']);
     expect(JSON.parse(await readFile(join(root, 'asset-resolution.json'), 'utf8')).chair).toBe(`${host}/files/${oid}`);
   });
   it('does not fetch URL additions; pulls only into project cache, reusing until explicit refresh', async () => {
@@ -226,6 +226,48 @@ describe('asset manager executable', { timeout: 20_000 }, () => {
     }
     expect((await verifyStore(store)).checked).toBe(1);
     expect(await readFile(join(root, '.gitignore'), 'utf8')).toBe('/asset_cache/\n/asset-resolution.json\n');
+  });
+  it('automatically resolves each asset locally when present and remotely when absent without fetching', async () => {
+    await run(['add', 'acme/models/chair', '--as', 'chair']);
+    await run(['add', `${host}/external.glb`, '--as', 'external']);
+    const assets = (await loadProject(root)).lock!.importers['.']!.assets;
+    requests = [];
+    await run(['resolve']);
+    expect(JSON.parse(await readFile(join(root, 'asset-resolution.json'), 'utf8'))).toEqual({
+      chair: `${host}/files/${oid}`,
+      external: `${host}/external.glb`,
+    });
+    await pullAsset(assets.chair!, root, store);
+    requests = [];
+    await run(['resolve', '--base-url', '/demo/']);
+    const native = assets.chair as NativeAsset;
+    expect(JSON.parse(await readFile(join(root, 'asset-resolution.json'), 'utf8'))).toEqual({
+      chair: `/demo/${relativeAssetPath(native)}`,
+      external: `${host}/external.glb`,
+    });
+    expect(requests).toEqual([]);
+    await pullAsset(assets.external!, root, store);
+    requests = [];
+    await run(['resolve']);
+    expect(JSON.parse(await readFile(join(root, 'asset-resolution.json'), 'utf8'))).toEqual({
+      chair: `/${relativeAssetPath(native)}`,
+      external: `/${relativeAssetPath(assets.external as UrlAsset)}`,
+    });
+    expect(requests).toEqual([]);
+  });
+  it('refuses corrupted local native bytes during auto resolution and preserves the previous map', async () => {
+    await run(['add', 'acme/models/chair', '--as', 'chair']);
+    await run(['pull']);
+    await run(['resolve']);
+    const previous = await readFile(join(root, 'asset-resolution.json'), 'utf8');
+    const entry = (await loadProject(root)).lock!.importers['.']!.assets.chair as NativeAsset;
+    const path = join(root, relativeAssetPath(entry));
+    await chmod(path, 0o644);
+    await writeFile(path, 'damaged native');
+    requests = [];
+    await expect(run(['resolve'])).rejects.toThrow('integrity mismatch');
+    expect(await readFile(join(root, 'asset-resolution.json'), 'utf8')).toBe(previous);
+    expect(requests).toEqual([]);
   });
   it('keeps file: sources live and pull never reads, hashes, copies or requires them', async () => {
     await writeFile(join(root, 'chair.glb'), 'original');

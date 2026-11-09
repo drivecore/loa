@@ -138,7 +138,7 @@ const imageUrl = assets.url('logo');
 
 The modifier passes non-`loa:` URLs through unchanged and reports unknown aliases. Pass the manager to each loader that should resolve asset aliases. Loaders that fetch directly without using the manager can use `assets.url(alias)` instead. The resolver itself does not depend on three.js.
 
-Choose the mode explicitly:
+For the Vite plugin, choose the mode explicitly:
 
 | Mode     | Development                                                                      | Production build                                                                   |
 | -------- | -------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------- |
@@ -149,15 +149,18 @@ Run `loa pull` before using local mode. Production remote mode keeps deployments
 
 ### Without Vite
 
-Generate a URL map from the lockfile:
+Generate a URL map from the lockfile, preferring locally pulled files wherever they exist:
 
 ```sh
+loa resolve
+# Optional overrides:
 loa resolve --mode remote
-# Or, after pulling:
 loa resolve --mode local
 ```
 
-This writes `asset-resolution.json` at the workspace root. Use `--output <file>` to choose another location or `--base-url <prefix>` to set the public URL prefix for local assets. The command requires a matching lockfile and does not re-resolve dependencies. Serve the JSON with your application and load it before the first asset request:
+This writes `asset-resolution.json` at the workspace root. The default `auto` mode checks each native asset and direct URL for a pulled file in `asset_cache/`. Present files receive local URLs; absent files keep their remote URLs. Native local files are hash-verified, while direct URL downloads remain unverified. Live `file:` references keep their live serving URLs. The command makes no downloads or registry requests and requires a matching lockfile.
+
+Use `--mode remote` or `--mode local` to force a mode, `--output <file>` to choose another output location, or `--base-url <prefix>` to set the public URL prefix for local assets. Detection happens when you run the command; run it again after pulling or removing local files. Serve the JSON with your application and load it before the first asset request:
 
 ```ts
 import { loadLoaResolver } from '@landofassets/runtime';

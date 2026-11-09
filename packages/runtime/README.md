@@ -14,4 +14,4 @@ Add `loa()` from `@landofassets/runtime/vite` to Vite's plugins. The default `re
 
 Native assets are hash-verified. Direct HTTP(S) URLs and live files deliberately have no integrity pin. Both native assets and direct URL downloads are materialized in the project's `asset_cache/`. Only native assets use the global store; live files stay at their original paths.
 
-Without Vite, call `loadLoaResolver('/asset-resolution.json')` before creating loaders, or construct a resolver with your own alias-to-URL object. Non-`loa:` loader URLs pass through unchanged; unknown aliases throw.
+Without Vite, run `loa resolve` to generate `asset-resolution.json`, preferring pulled files in `asset_cache/` and using remote URLs for missing files. Then call `loadLoaResolver('/asset-resolution.json')` before creating loaders, or construct a resolver with your own alias-to-URL object. Non-`loa:` loader URLs pass through unchanged; unknown aliases throw.
