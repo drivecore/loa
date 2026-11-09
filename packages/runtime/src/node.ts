@@ -53,7 +53,7 @@ function extension(value: unknown): string {
 }
 export function parseLockfile(value: unknown): Lockfile {
   const input = object(value);
-  if (input.lockfileVersion !== 1) throw new Error('Unsupported loa-lock.json version');
+  if (input.lockfileVersion !== 1) throw new Error('Unsupported assets-lock.json version');
   const importers: Lockfile['importers'] = Object.create(null);
   for (const [directory, rawImporter] of Object.entries(object(input.importers))) {
     string(directory, 'importer directory');

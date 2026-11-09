@@ -163,7 +163,7 @@ describe('asset manager executable', { timeout: 20_000 }, () => {
         requests.find((r) => r.path === (newAsset ? '/assets/acme/models' : '/assets/acme/models/chair/versions'))
           ?.auth,
       ).toBe('Bearer test-access-token');
-      expect(await readdir(root)).not.toContain('loa.json');
+      expect(await readdir(root)).not.toContain('assets.json');
       expect(requests.find((r) => r.path === '/upload')?.auth).toBeUndefined();
     },
   );
@@ -248,7 +248,7 @@ describe('asset manager executable', { timeout: 20_000 }, () => {
     await run(['add', `${host}/external.glb`, '--as', 'external']);
     const project = await loadProject(root);
     project.manifests['.']!.assets.external = `${host}/other.glb`;
-    await writeFile(join(root, 'loa.json'), JSON.stringify(project.manifests['.']));
+    await writeFile(join(root, 'assets.json'), JSON.stringify(project.manifests['.']));
     await expect(run(['pull', '--frozen-lockfile'])).rejects.toThrow();
     expect(requests).toEqual([]);
     expect(await readdir(root)).not.toContain('asset_cache');
@@ -289,7 +289,7 @@ describe('asset manager executable', { timeout: 20_000 }, () => {
   it('fails closed on prune when a registered existing project has lost its lock', async () => {
     await run(['add', 'acme/models/chair', '--as', 'chair']);
     await run(['pull']);
-    await rm(join(root, 'loa-lock.json'));
+    await rm(join(root, 'assets-lock.json'));
     await expect(pruneStore(store)).rejects.toThrow();
     expect((await verifyStore(store)).checked).toBe(1);
   });
@@ -298,7 +298,7 @@ describe('asset manager executable', { timeout: 20_000 }, () => {
     await run(['pull']);
     const other = await mkdtemp(join(tmpdir(), 'loa-other-project-'));
     try {
-      await writeFile(join(other, 'loa-lock.json'), await readFile(join(root, 'loa-lock.json')));
+      await writeFile(join(other, 'assets-lock.json'), await readFile(join(root, 'assets-lock.json')));
       await registerProject(store, other);
       await run(['remove', 'chair']);
       expect(await pruneStore(store)).toBe(0);

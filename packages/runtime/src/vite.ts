@@ -10,7 +10,7 @@ export type LoaPluginOptions = {
   mode?: ResolveMode;
   /** Project root; defaults to Vite's root. */
   root?: string;
-  /** Lockfile path relative to root. Default: loa-lock.json. */
+  /** Lockfile path relative to root. Default: assets-lock.json. */
   lockfile?: string;
 };
 const virtualId = '\0virtual:loa';
@@ -54,7 +54,7 @@ export function loa(options: LoaPluginOptions = {}): Plugin {
   const mode = options.mode ?? 'remote';
   if (mode !== 'remote' && mode !== 'local') throw new Error('Expected remote or local LoA mode');
   let root = resolve(options.root ?? '.');
-  let lockPath = resolve(root, options.lockfile ?? 'loa-lock.json');
+  let lockPath = resolve(root, options.lockfile ?? 'assets-lock.json');
   let base = '/';
   let building = false;
   const readLock = async (): Promise<Lockfile> => parseLockfile(JSON.parse(await readFile(lockPath, 'utf8')));
@@ -63,7 +63,7 @@ export function loa(options: LoaPluginOptions = {}): Plugin {
     enforce: 'pre' as const,
     configResolved(config) {
       root = resolve(options.root ?? config.root);
-      lockPath = resolve(root, options.lockfile ?? 'loa-lock.json');
+      lockPath = resolve(root, options.lockfile ?? 'assets-lock.json');
       base = config.base;
       building = config.command === 'build';
     },

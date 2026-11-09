@@ -34,7 +34,7 @@ afterEach(async () => {
 });
 async function manifest(directory: string, value: unknown) {
   await mkdir(directory, { recursive: true });
-  await writeFile(join(directory, 'loa.json'), JSON.stringify(value));
+  await writeFile(join(directory, 'assets.json'), JSON.stringify(value));
 }
 
 describe('project asset selections', () => {
@@ -84,7 +84,7 @@ describe('project asset selections', () => {
       kind: 'file',
       path: '../../logo.png',
     });
-    expect(await readFile(join(root, 'loa.json'), 'utf8')).not.toContain('logo');
+    expect(await readFile(join(root, 'assets.json'), 'utf8')).not.toContain('logo');
   });
   it('rejects duplicate workspace aliases before writing changes', async () => {
     await manifest(root, {
@@ -97,7 +97,7 @@ describe('project asset selections', () => {
     await expect(addAsset('https://example.com/other.glb', 'chair', level, host, api)).rejects.toThrow(
       'Duplicate workspace alias',
     );
-    expect(JSON.parse(await readFile(join(level, 'loa.json'), 'utf8')).assets).toEqual({});
+    expect(JSON.parse(await readFile(join(level, 'assets.json'), 'utf8')).assets).toEqual({});
   });
   it('reuses locked metadata offline, even when LOA_HOST changes', async () => {
     await addAsset('acme/models/chair', 'chair', root, host, api);

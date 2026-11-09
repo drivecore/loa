@@ -50,7 +50,7 @@ async function fixture() {
   const root = await mkdtemp(join(tmpdir(), 'loa-runtime-'));
   roots.push(root);
   const value = lock();
-  await writeFile(join(root, 'loa-lock.json'), JSON.stringify(value));
+  await writeFile(join(root, 'assets-lock.json'), JSON.stringify(value));
   await mkdir(join(root, 'brand'));
   await writeFile(join(root, 'brand/logo.png'), 'logo bytes');
   await writeFile(join(root, 'index.html'), '<script type="module" src="/main.js"></script>');

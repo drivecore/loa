@@ -77,7 +77,7 @@ function object(value: unknown): value is Record<string, unknown> {
 
 function parseManifest(value: unknown): Manifest {
   if (!object(value) || typeof value.name !== 'string' || !value.name.trim() || !object(value.assets)) {
-    throw new Error('loa.json requires a name and an assets object');
+    throw new Error('assets.json requires a name and an assets object');
   }
   for (const [alias, specifier] of Object.entries(value.assets)) {
     validateAlias(alias);
@@ -97,7 +97,7 @@ function parseManifest(value: unknown): Manifest {
 
 async function readManifest(directory: string): Promise<Manifest | undefined> {
   try {
-    return parseManifest(JSON.parse(await readFile(join(directory, 'loa.json'), 'utf8')));
+    return parseManifest(JSON.parse(await readFile(join(directory, 'assets.json'), 'utf8')));
   } catch (error) {
     if ((error as NodeJS.ErrnoException).code === 'ENOENT') return undefined;
     throw error;
@@ -112,7 +112,7 @@ async function manifestsAt(root: string, manifest: Manifest): Promise<Record<str
   const manifests: Record<string, Manifest> = Object.assign(Object.create(null), { '.': manifest });
   const files = manifest.workspaces?.length
     ? await glob(
-        manifest.workspaces.map((pattern) => `${pattern.replace(/\/$/, '')}/loa.json`),
+        manifest.workspaces.map((pattern) => `${pattern.replace(/\/$/, '')}/assets.json`),
         {
           cwd: root,
           onlyFiles: true,
@@ -153,7 +153,7 @@ export async function loadProject(cwd = process.cwd(), create = false): Promise<
   }
   const nearest = ancestors[0];
   if (!nearest) {
-    if (!create) throw new Error('No loa.json found. Run loa add to initialize this project.');
+    if (!create) throw new Error('No assets.json found. Run loa add to initialize this project.');
     const root = resolve(cwd);
     return { root, current: '.', manifests: { '.': { name: basename(root), assets: {} } } };
   }
@@ -169,7 +169,7 @@ export async function loadProject(cwd = process.cwd(), create = false): Promise<
   }
   let lock: Lockfile | undefined;
   try {
-    lock = parseLockfile(JSON.parse(await readFile(join(root, 'loa-lock.json'), 'utf8')));
+    lock = parseLockfile(JSON.parse(await readFile(join(root, 'assets-lock.json'), 'utf8')));
   } catch (error) {
     if ((error as NodeJS.ErrnoException).code !== 'ENOENT') throw error;
   }
@@ -220,7 +220,7 @@ export async function resolveProject(
     api?: Registry;
   } = {},
 ): Promise<Lockfile> {
-  if (options.frozen && !project.lock) throw new Error('Frozen lockfile requested but loa-lock.json is missing');
+  if (options.frozen && !project.lock) throw new Error('Frozen lockfile requested but assets-lock.json is missing');
   const lock: Lockfile = { lockfileVersion: 1, importers: Object.create(null) };
   for (const key of Object.keys(project.manifests).toSorted()) {
     const manifest = project.manifests[key]!;
@@ -241,7 +241,7 @@ export async function resolveProject(
       }
       if (matches && old && !options.update?.has(alias)) assets[alias] = old;
       else {
-        if (options.frozen) throw new Error(`Frozen lockfile differs from loa.json: ${key}/${alias}`);
+        if (options.frozen) throw new Error(`Frozen lockfile differs from assets.json: ${key}/${alias}`);
         assets[alias] = await resolveSource(alias, specifier, old?.kind === 'loa' ? old.host : host, options.api);
       }
     }
@@ -295,8 +295,8 @@ export async function atomicWrite(path: string, contents: string): Promise<void>
 
 export async function saveProject(project: Project, lock: Lockfile, changedManifests: string[] = []): Promise<void> {
   for (const key of changedManifests)
-    await atomicWrite(join(project.root, key, 'loa.json'), serializeManifest(project.manifests[key]!));
-  await atomicWrite(join(project.root, 'loa-lock.json'), serializeLock(lock));
+    await atomicWrite(join(project.root, key, 'assets.json'), serializeManifest(project.manifests[key]!));
+  await atomicWrite(join(project.root, 'assets-lock.json'), serializeLock(lock));
 }
 
 export async function ignoreLocalAssets(root: string): Promise<void> {

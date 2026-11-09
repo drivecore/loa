@@ -19,7 +19,7 @@ npm install -g @landofassets/cli
 loa add acme/furniture/chair@2.3.0 --as chair
 ```
 
-`add` writes `loa.json` and `loa-lock.json`. It resolves the native reference to an exact version and content hash, without downloading the asset file. Commit both files with your code.
+`add` writes `assets.json` and `assets-lock.json`. It resolves the native reference to an exact version and content hash, without downloading the asset file. Commit both files with your code.
 
 ```json
 {
@@ -195,7 +195,7 @@ A root manifest can include manifests for levels, areas, or packages:
 }
 ```
 
-Each matching directory contains its own `loa.json` with a name and asset declarations. One `loa-lock.json` at the root records entries by declaring directory, so commands can preserve workspace ownership and relative file paths.
+Each matching directory contains its own `assets.json` with a name and asset declarations. One `assets-lock.json` at the root records entries by declaring directory, so commands can preserve workspace ownership and relative file paths.
 
 Run `add` and `remove` in the workspace whose manifest you want to edit. Pulling from the root materializes the workspace's combined asset set. Runtime aliases share one namespace: duplicate aliases across manifests are rejected. Use distinct aliases such as `lobby-chair` and `bedroom-chair` when needed.
 

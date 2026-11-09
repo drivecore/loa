@@ -32,7 +32,7 @@ loa assets list --org my-org --project my-project
 
 ## Asset manager
 
-Keep consuming asset selections in Git with `loa.json` and `loa-lock.json`. LoA stores immutable native versions; Git branches and merges the selections alongside your code.
+Keep consuming asset selections in Git with `assets.json` and `assets-lock.json`. LoA stores immutable native versions; Git branches and merges the selections alongside your code.
 
 ```sh
 loa add acme/furniture/chair@2.3.0 --as chair

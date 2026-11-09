@@ -12,7 +12,7 @@ The Land of Assets platform itself is closed source. These modules are developed
 
 ## Asset manager
 
-The `loa` CLI keeps asset selections in Git with `loa.json` and `loa-lock.json`. Native LoA versions have verified hashes and share a global download store; HTTP(S) URLs use a project-local cache when pulled, and `file:` references stay live. Load remotely or pull the same selections for offline use.
+The `loa` CLI keeps asset selections in Git with `assets.json` and `assets-lock.json`. Native LoA versions have verified hashes and share a global download store; HTTP(S) URLs use a project-local cache when pulled, and `file:` references stay live. Load remotely or pull the same selections for offline use.
 
 ```sh
 loa add acme/furniture/chair@2.3.0 --as chair

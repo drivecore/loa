@@ -5,7 +5,7 @@ import { getCliDeps } from '../lib/deps.ts';
 
 export const command = defineCommand({
   command: 'add <source>',
-  describe: 'Add a native asset ref, direct URL, or live local file to loa.json (no download)',
+  describe: 'Add a native asset ref, direct URL, or live local file to assets.json (no download)',
   builder: (yargs) =>
     yargs
       .positional('source', {
@@ -17,6 +17,6 @@ export const command = defineCommand({
   handler: async (argv) => {
     const deps = getCliDeps(argv);
     await addAsset(argv.source, argv.as, process.cwd(), (await getConfig(deps)).host);
-    deps.logger.info('Updated loa.json and loa-lock.json');
+    deps.logger.info('Updated assets.json and assets-lock.json');
   },
 });

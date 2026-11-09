@@ -42,6 +42,6 @@ export const command = defineCommand({
     if (!found) throw new Error(`Unknown asset alias: ${argv.alias}`);
     const lock = await resolveProject(project, host, { update });
     await saveProject(project, lock, [...changed]);
-    deps.logger.info('Updated loa-lock.json');
+    deps.logger.info('Updated assets-lock.json');
   },
 });

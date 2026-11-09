@@ -157,7 +157,7 @@ export async function pruneStore(store: string): Promise<number> {
         continue;
       }
       // Fail closed on missing or malformed locks in existing projects; never guess that they are unused.
-      const lock = parseLockfile(JSON.parse(await readFile(join(root, 'loa-lock.json'), 'utf8')));
+      const lock = parseLockfile(JSON.parse(await readFile(join(root, 'assets-lock.json'), 'utf8')));
       for (const importer of Object.values(lock.importers))
         for (const entry of Object.values(importer.assets)) {
           if (entry.kind === 'loa') keep.add(nativeHashHex(entry.hash));
