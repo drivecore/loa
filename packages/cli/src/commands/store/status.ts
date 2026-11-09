@@ -3,7 +3,7 @@ import { storePath, verifyStore } from '../../lib/asset-manager/store.ts';
 import { getCliDeps } from '../../lib/deps.ts';
 
 export const command = defineCommand({
-  command: 'verify',
+  command: 'status',
   describe: 'Verify the SHA-256 of every native asset in the global store',
   builder: (yargs) => yargs,
   handler: async (argv) => {

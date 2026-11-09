@@ -221,7 +221,7 @@ The existing `loa assets create`, `loa assets upload`, and other administrative 
 
 ```sh
 loa store path
-loa store verify
+loa store status
 loa store prune
 ```
 
@@ -235,12 +235,8 @@ The default store follows platform cache conventions:
 
 Set `LOA_STORE_DIR` to override the location. Only native LoA bytes belong there. URL downloads stay in their project's `asset_cache/`, and live file sources stay at their original paths.
 
-`verify` checks stored bytes against their SHA-256 names. `prune` keeps content referenced by the current lockfiles of projects registered during native pulls. Deleted projects no longer retain entries. If an existing registered project has a missing or malformed lockfile, pruning fails rather than guessing which bytes are unused.
+`status` checks stored bytes against their SHA-256 names. `prune` keeps content referenced by the current lockfiles of projects registered during native pulls. Deleted projects no longer retain entries. If an existing registered project has a missing or malformed lockfile, pruning fails rather than guessing which bytes are unused.
 
 Native references resolve through the configured API host, defaulting to `https://api.landofassets.com`. Use `LOA_HOST` or `loa config set --host <url>` for another host. The lockfile records the resolved host so an environment change does not silently move an existing locked dependency to another registry.
-
-## Current scope
-
-The asset manager consumes public native assets with no credentials in the runtime or download path. Asset resolution is flat: each native asset is one self-contained file, with no dependency solver. Private runtime access, scoped workspace aliases, and automatic runtime fallback between local and remote sources are outside this version.
 
 See the [CLI reference](/cli) for command options and the [SDK reference](/sdk) for programmatic catalog and publication APIs.

@@ -333,6 +333,16 @@ describe('asset manager executable', { timeout: 20_000 }, () => {
     expect(requests.map((r) => r.path)).toEqual([`/files/${oid}`]);
     expect((await verifyStore(store)).corrupt).toEqual([]);
   });
+  it('reports store integrity through store status and fails when cached native bytes are modified', async () => {
+    expect((await run(['store', 'status'])).stdout).toContain('Verified 0 store files');
+    await run(['add', 'acme/models/chair', '--as', 'chair']);
+    await run(['pull']);
+    expect((await run(['store', 'status'])).stdout).toContain('Verified 1 store files');
+    const cached = contentPath(store, oid);
+    await chmod(cached, 0o644);
+    await writeFile(cached, 'damaged');
+    await expect(run(['store', 'status'])).rejects.toThrow('Corrupt store files');
+  });
   it('cleans interrupted direct downloads without poisoning the cache', async () => {
     await run(['add', `${host}/interrupted.glb`, '--as', 'broken']);
     await expect(run(['pull'])).rejects.toThrow();
