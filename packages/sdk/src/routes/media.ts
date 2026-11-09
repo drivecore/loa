@@ -88,9 +88,9 @@ export const mediaTaskAcceptedSchema = z.object({
 });
 export type MediaTaskAccepted = z.infer<typeof mediaTaskAcceptedSchema>;
 
-// --- HDR images (EXR / HDR / UltraHDR) ---
+// --- HDR images (EXR / HDR / JPEG XL / UltraHDR) ---
 
-export const HdrImageFormat = z.enum(['exr', 'hdr', 'ultrahdr']);
+export const HdrImageFormat = z.enum(['exr', 'hdr', 'jxl', 'ultrahdr']);
 export type HdrImageFormat = z.infer<typeof HdrImageFormat>;
 
 export const hdrImageQuerySchema = z.object({
@@ -111,6 +111,11 @@ export const imageExrQuerySchema = hdrImageQuerySchema;
 export type ImageExrQuery = HdrImageQuery;
 export const imageExrTaskQuerySchema = hdrImageTaskQuerySchema;
 export type ImageExrTaskQuery = HdrImageTaskQuery;
+
+export const imageJxlQuerySchema = hdrImageQuerySchema;
+export type ImageJxlQuery = HdrImageQuery;
+export const imageJxlTaskQuerySchema = hdrImageTaskQuerySchema;
+export type ImageJxlTaskQuery = HdrImageTaskQuery;
 
 // --- Standard images (WebP, extensible to future raster formats) ---
 
@@ -212,6 +217,7 @@ export const MediaFormat = z.enum([
   'webp',
   'exr',
   'hdr',
+  'jxl',
   'ultrahdr',
   'glb',
   'usdz',
@@ -225,7 +231,7 @@ export type MediaFormat = z.infer<typeof MediaFormat>;
 
 export type MediaGetUrlProps =
   | { params: MediaParams; format: 'webp'; query?: ImageQuery }
-  | { params: MediaParams; format: 'exr' | 'hdr' | 'ultrahdr'; query?: HdrImageQuery }
+  | { params: MediaParams; format: 'exr' | 'hdr' | 'jxl' | 'ultrahdr'; query?: HdrImageQuery }
   | { params: MediaParams; format: 'glb'; query?: ModelGlbQuery }
   | { params: MediaParams; format: 'usdz'; query?: ModelUsdzQuery }
   | { params: MediaParams; format: 'blend'; query?: ModelBlendQuery }
@@ -236,7 +242,7 @@ export type MediaGetUrlProps =
 
 export type MediaUrlProps =
   | { params: MediaParams; format: 'webp'; query?: ImageQuery | ImageTaskQuery }
-  | { params: MediaParams; format: 'exr' | 'hdr' | 'ultrahdr'; query?: HdrImageQuery | HdrImageTaskQuery }
+  | { params: MediaParams; format: 'exr' | 'hdr' | 'jxl' | 'ultrahdr'; query?: HdrImageQuery | HdrImageTaskQuery }
   | { params: MediaParams; format: 'glb'; query?: ModelGlbQuery | ModelGlbTaskQuery }
   | { params: MediaParams; format: 'usdz'; query?: ModelUsdzQuery | ModelUsdzTaskQuery }
   | { params: MediaParams; format: 'blend'; query?: ModelBlendQuery | ModelBlendTaskQuery }
@@ -247,7 +253,7 @@ export type MediaUrlProps =
 
 export type StartMediaTaskProps =
   | { params: MediaParams; format: 'webp'; query?: ImageTaskQuery }
-  | { params: MediaParams; format: 'exr' | 'hdr' | 'ultrahdr'; query?: HdrImageTaskQuery }
+  | { params: MediaParams; format: 'exr' | 'hdr' | 'jxl' | 'ultrahdr'; query?: HdrImageTaskQuery }
   | { params: MediaParams; format: 'glb'; query?: ModelGlbTaskQuery }
   | { params: MediaParams; format: 'usdz'; query?: ModelUsdzTaskQuery }
   | { params: MediaParams; format: 'blend'; query?: ModelBlendTaskQuery }
@@ -298,7 +304,7 @@ export const startMediaTask = async (client: ApiClient, props: StartMediaTaskPro
 
 export async function getMedia<T extends BinaryResponse>(
   client: ApiClient,
-  props: Extract<MediaGetUrlProps, { format: 'webp' | 'exr' | 'hdr' | 'ultrahdr' }>,
+  props: Extract<MediaGetUrlProps, { format: 'webp' | 'exr' | 'hdr' | 'jxl' | 'ultrahdr' }>,
   binaryResponse?: T,
 ): Promise<BinaryResponseType<T>>;
 export async function getMedia<T extends BinaryResponse>(
