@@ -6,9 +6,11 @@ description: Keep asset selections in Git and load the same assets from the clou
 
 # Asset manager
 
-The `loa` CLI manages the assets a codebase consumes. Keep selections in Git, publish immutable versions to LoA, and load those versions from the cloud or a local checkout.
+Build with a shared asset library without filling your Git repository with large binary files. The `loa` CLI lets you reuse models, materials, images, and lighting across projects while keeping each application's asset choices in a small, reviewable manifest.
 
-Git owns branches, reviews, and merges. LoA owns published versions and their bytes. A feature branch can select a different chair or lighting rig alongside the code that uses it. One codebase can consume assets from many LoA organizations and projects; it does not need a matching LoA project.
+Pin an immutable version so a new upload cannot unexpectedly change your scene. Review asset updates alongside the code that uses them, try a different chair or lighting rig on a feature branch, and return to the previous selection when needed. Teammates and CI can pull the same verified native assets, with a shared cache that avoids downloading identical bytes for every project.
+
+Start loading from the cloud without pulling files first, pull assets for offline work, or bundle them into a self-contained deployment. Mix published LoA assets with direct URLs and live local files as you develop, then publish the assets you want to share and pin. Your code keeps the same asset names as the project grows.
 
 ## Select assets with your code
 
