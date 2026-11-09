@@ -134,9 +134,7 @@ export function loa(options: LoaPluginOptions = {}): Plugin {
         const route = routes.get(pathname);
         if (!route) {
           const prefix = new URL(base, 'http://loa.local/').pathname.replace(/\/$/, '');
-          if (
-            ['/__loa/live/', '/loa_assets/', '/asset_cache/'].some((part) => pathname.startsWith(`${prefix}${part}`))
-          ) {
+          if (['/__loa/live/', '/asset_cache/'].some((part) => pathname.startsWith(`${prefix}${part}`))) {
             response.writeHead(404);
             response.end();
             return;

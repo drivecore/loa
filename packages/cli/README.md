@@ -42,7 +42,7 @@ loa pull
 loa resolve --mode local
 ```
 
-Native refs are hash-verified and downloaded into a global store, then materialized in `loa_assets/` using clone, hardlink, or copy. Direct HTTP(S) URLs skip integrity checks and global caching; `pull` downloads them into project-local `asset_cache/`, and `pull --refresh` fetches them again. `file:` entries load live from their manifest-relative location and are never copied, hashed, or changed by `pull`. Adding any source does not download its bytes.
+Native refs are hash-verified and downloaded into a global store, then materialized in `asset_cache/` using clone, hardlink, or copy. Direct HTTP(S) URLs skip integrity checks and global caching; `pull` downloads them into project-local `asset_cache/`, and `pull --refresh` fetches them again. `file:` entries load live from their manifest-relative location and are never copied, hashed, or changed by `pull`. Adding any source does not download its bytes.
 
 | Command                                                           | Purpose                                                                   |
 | ----------------------------------------------------------------- | ------------------------------------------------------------------------- |
@@ -55,7 +55,7 @@ Native refs are hash-verified and downloaded into a global store, then materiali
 | `loa resolve --mode <mode>`                                       | Write `loa-resolution.json` from the lockfile                             |
 | `loa store <command>`                                             | Inspect and maintain the native global store                              |
 
-Ignore `loa_assets/`, `asset_cache/`, and generated `loa-resolution.json`; commit the manifest and lockfile. Only native assets have reproducible verified bytes. External URLs and live files remain mutable even with `--frozen-lockfile`.
+Ignore `asset_cache/` and generated `loa-resolution.json`; commit the manifest and lockfile. Only native assets have reproducible verified bytes. External URLs and live files remain mutable even with `--frozen-lockfile`.
 
 Use `@landofassets/runtime` to resolve aliases in an application and `@landofassets/runtime/vite` to serve or bundle local assets. The [asset manager overview](../website/docs/asset-manager.md) covers runtime integration, workspaces, deployment modes, and the source model.
 

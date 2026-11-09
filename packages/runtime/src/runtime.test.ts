@@ -96,7 +96,7 @@ describe('lock resolution', () => {
     expect(resolution.remote).toBe('https://example.com/chair@1.0.0');
     expect(resolution.logo).toBe(`/demo/${liveAssetUrl('.', 'logo')}`);
     const local = buildResolution(lock(), { mode: 'local', baseUrl: '/demo/' });
-    expect(local.chair).toContain('/demo/loa_assets/');
+    expect(local.chair).toContain('/demo/asset_cache/');
     expect(local.remote).toContain('/demo/asset_cache/');
     expect(local.logo).toBe(resolution.logo);
   });
@@ -115,6 +115,11 @@ describe('lock resolution', () => {
     const invalid = lock();
     invalid.importers['../outside'] = invalid.importers['.']!;
     expect(() => parseLockfile(invalid)).toThrow('Invalid importer');
+  });
+  it('rejects bare-version native source shorthand in locks', () => {
+    const value = lock();
+    value.importers['.']!.assets.chair = { ...native, specifier: '1.0.0' };
+    expect(() => parseLockfile(value)).toThrow('full org/project/asset ref');
   });
   it('rejects absolute or inconsistent live paths and URL substitutions', () => {
     for (const path of ['/etc/passwd', 'C:/secret.png', '..\\secret.png']) {

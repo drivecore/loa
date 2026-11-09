@@ -36,6 +36,8 @@ export function assertNativeAsset(entry: NativeAsset): void {
   const segments = entry.ref.split('/');
   if (segments.length !== 3 || segments.some((part) => !/^[A-Za-z0-9][A-Za-z0-9._-]*$/.test(part)))
     throw new Error('Invalid canonical asset ref');
+  if (entry.specifier.split('@')[0] !== entry.ref)
+    throw new Error('Native source specifier must contain its full org/project/asset ref');
   if (!/^(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)$/.test(entry.version))
     throw new Error('Expected an exact asset version');
   if (entry.version.split('.').some((part) => Number(part) > 2147483647))
@@ -110,7 +112,7 @@ export function relativeAssetPath(entry: Exclude<LockedAsset, { kind: 'file' }>)
   if (entry.kind === 'url') return posix.join('asset_cache', `${urlHash(entry.url)}${extension(entry.extension)}`);
   assertNativeAsset(entry);
   return posix.join(
-    'loa_assets',
+    'asset_cache',
     urlHash(entry.host).slice(0, 16),
     entry.ref,
     entry.version,

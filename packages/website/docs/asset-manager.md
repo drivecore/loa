@@ -30,26 +30,26 @@ loa add acme/furniture/chair@2.3.0 --as chair
 }
 ```
 
-The reference `acme/furniture/chair` is the asset's canonical `org/project/asset` name. `chair` is an alias local to your manifest. You can use the canonical reference as the key instead:
+The reference `acme/furniture/chair` is the asset's canonical `org/project/asset` name. `chair` is an alias local to your manifest. The key only names the binding; the value always contains the full source reference. You can use the canonical reference as the key too:
 
 ```json
 {
   "name": "showroom",
   "assets": {
-    "acme/furniture/chair": "2.3.0"
+    "acme/furniture/chair": "acme/furniture/chair@2.3.0"
   }
 }
 ```
 
-Omit the version when adding an asset to select the current latest version and record an exact pin. Numeric selectors such as `2` and `2.3`, and `latest`, can be retained in hand-edited manifests; the lockfile still records one exact version. `latest` means the highest numeric version, not the most recently uploaded file.
+Omit the version when adding an asset to select the current latest version and record an exact pin. Hand-edited manifests can retain selectors such as `acme/furniture/chair@2`, `acme/furniture/chair@2.3`, or `acme/furniture/chair@latest`; the lockfile still records one exact version. Bare values such as `"2.3.0"` are not supported. `latest` means the highest numeric version, not the most recently uploaded file.
 
 ## Three source types
 
-| Source             | Example manifest value              | Integrity        | What `loa pull` does                                            |
-| ------------------ | ----------------------------------- | ---------------- | --------------------------------------------------------------- |
-| LoA reference      | `acme/furniture/chair@2.3.0`        | Verifies SHA-256 | Fetches into the shared store and materializes in `loa_assets/` |
-| Direct HTTP(S) URL | `https://example.com/downlight.ies` | Unverified       | Downloads into this project's `asset_cache/`                    |
-| Local file         | `file:../brand/logo.png`            | Unverified, live | Leaves the source file untouched                                |
+| Source             | Example manifest value              | Integrity        | What `loa pull` does                                             |
+| ------------------ | ----------------------------------- | ---------------- | ---------------------------------------------------------------- |
+| LoA reference      | `acme/furniture/chair@2.3.0`        | Verifies SHA-256 | Fetches into the shared store and materializes in `asset_cache/` |
+| Direct HTTP(S) URL | `https://example.com/downlight.ies` | Unverified       | Downloads into this project's `asset_cache/`                     |
+| Local file         | `file:../brand/logo.png`            | Unverified, live | Leaves the source file untouched                                 |
 
 ```sh
 loa add https://example.com/downlight.ies --as downlight
@@ -58,7 +58,7 @@ loa add ../brand/logo.png --as logo
 
 Adding a URL records it without fetching it. Every HTTP(S) specifier is a direct URL, including one hosted by a LoA server or containing `@version`. It does not receive native registry resolution, integrity checks, or global caching.
 
-Local files resolve relative to the manifest that declares them. They stay live at that location: edits are visible without pulling, hashing, or updating the lockfile. Do not use the materialized `loa_assets/` directory as an editing workspace; use a `file:` source for files you intend to edit.
+Local files resolve relative to the manifest that declares them. They stay live at that location: edits are visible without pulling, hashing, or updating the lockfile. Do not use the materialized `asset_cache/` directory as an editing workspace; use a `file:` source for files you intend to edit.
 
 Only native LoA versions guarantee pinned bytes. A direct URL may return different bytes later, and a local file reflects its current contents. Publish an asset to LoA when you need verified, repeatable consumption.
 
@@ -70,7 +70,7 @@ loa pull
 
 For native assets, `pull` checks the lockfile, verifies cached or downloaded content, and materializes project files from the global store. It tries a filesystem clone first, then a hardlink, then a copy. A hardlinked project file shares bytes with the store; treat these files as immutable.
 
-Direct URL downloads live only in `asset_cache/`, with filenames derived from the URL. Existing downloads are reused. To fetch their current response again:
+All pulled assets live in the project's `asset_cache/`: native files are materialized from the verified global store, while direct URL downloads are stored only in this project folder, with filenames derived from the URL. Existing URL downloads are reused. To fetch their current response again:
 
 ```sh
 loa pull --refresh
@@ -81,7 +81,6 @@ loa pull --refresh
 Ignore generated local state in Git:
 
 ```gitignore
-loa_assets/
 asset_cache/
 loa-resolution.json
 ```

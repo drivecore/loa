@@ -117,7 +117,7 @@ async function manifestsAt(root: string, manifest: Manifest): Promise<Record<str
           cwd: root,
           onlyFiles: true,
           unique: true,
-          ignore: ['**/node_modules/**', '**/loa_assets/**', '**/asset_cache/**'],
+          ignore: ['**/node_modules/**', '**/asset_cache/**'],
           followSymbolicLinks: false,
         },
       )
@@ -183,12 +183,7 @@ export function extensionFor(path: string): string {
   return /^\.[a-z0-9]+$/.test(extension) ? extension : '.bin';
 }
 
-export async function resolveSource(
-  alias: string,
-  specifier: string,
-  host: string,
-  api: Registry = registry,
-): Promise<LockedAsset> {
+export async function resolveSource(specifier: string, host: string, api: Registry = registry): Promise<LockedAsset> {
   if (specifier.startsWith('file:')) {
     const path = specifier.slice(5);
     if (!path || isAbsolute(path) || /^[a-z]:/i.test(path) || path.includes('\\')) {
@@ -201,7 +196,7 @@ export async function resolveSource(
     if (url.username || url.password) throw new Error('Asset URLs must not contain credentials');
     return { kind: 'url', specifier, url: url.toString(), extension: extensionFor(url.pathname) };
   }
-  const { ref, selector } = specifier.includes('/') ? parseRef(specifier) : parseRef(`${alias}@${specifier}`);
+  const { ref, selector } = parseRef(specifier);
   const normalized = new URL(host);
   if (!['http:', 'https:'].includes(normalized.protocol) || normalized.username || normalized.password)
     throw new Error('Invalid LoA host');
@@ -231,7 +226,7 @@ export async function resolveProject(
       const old = previous?.assets[alias];
       let matches = old?.specifier === specifier;
       if (matches && old?.kind === 'loa') {
-        const selected = specifier.includes('/') ? parseRef(specifier) : parseRef(`${alias}@${specifier}`);
+        const selected = parseRef(specifier);
         matches =
           selected.ref === old.ref &&
           (selected.selector === undefined ||
@@ -242,7 +237,7 @@ export async function resolveProject(
       if (matches && old && !options.update?.has(alias)) assets[alias] = old;
       else {
         if (options.frozen) throw new Error(`Frozen lockfile differs from assets.json: ${key}/${alias}`);
-        assets[alias] = await resolveSource(alias, specifier, old?.kind === 'loa' ? old.host : host, options.api);
+        assets[alias] = await resolveSource(specifier, old?.kind === 'loa' ? old.host : host, options.api);
       }
     }
     lock.importers[key] = { name: manifest.name, assets };
@@ -307,9 +302,7 @@ export async function ignoreLocalAssets(root: string): Promise<void> {
   } catch (error) {
     if ((error as NodeJS.ErrnoException).code !== 'ENOENT') throw error;
   }
-  const missing = ['/loa_assets/', '/asset_cache/', '/loa-resolution.json'].filter(
-    (entry) => !text.split(/\r?\n/).includes(entry),
-  );
+  const missing = ['/asset_cache/', '/loa-resolution.json'].filter((entry) => !text.split(/\r?\n/).includes(entry));
   if (missing.length)
     await atomicWrite(path, text + (text && !text.endsWith('\n') ? '\n' : '') + missing.join('\n') + '\n');
 }
@@ -350,9 +343,9 @@ export async function addAsset(
     const parsed = parseRef(input);
     alias ??= parsed.ref;
     if (!parsed.selector) {
-      const resolved = await resolveSource(alias, input, host, api);
+      const resolved = await resolveSource(input, host, api);
       if (resolved.kind !== 'loa') throw new Error('Expected native asset');
-      specifier = alias === parsed.ref ? resolved.version : `${parsed.ref}@${resolved.version}`;
+      specifier = `${parsed.ref}@${resolved.version}`;
       // Reuse the exact resolution so adding an unversioned ref requires one metadata request.
       project.lock ??= { lockfileVersion: 1, importers: Object.create(null) };
       project.lock.importers[project.current] ??= { name: project.manifests[project.current]!.name, assets: {} };

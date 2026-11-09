@@ -211,6 +211,22 @@ describe('asset manager executable', { timeout: 20_000 }, () => {
     expect(await readFile(destination, 'utf8')).toBe('external version two');
     expect(requests.every((r) => r.auth === undefined)).toBe(true);
   });
+  it('pulls native and direct URL assets into one project cache while globally storing only native bytes', async () => {
+    await run(['add', 'acme/models/chair', '--as', 'chair']);
+    await run(['add', `${host}/external.glb`, '--as', 'external']);
+    await run(['pull', '--frozen-lockfile']);
+    const assets = (await loadProject(root)).lock!.importers['.']!.assets;
+    for (const alias of ['chair', 'external']) {
+      const entry = assets[alias]!;
+      if (entry.kind === 'file') throw new Error('Expected pulled test asset');
+      expect(relativeAssetPath(entry).split('/')[0]).toBe('asset_cache');
+      expect(await readFile(join(root, relativeAssetPath(entry)), 'utf8')).toBe(
+        entry.kind === 'loa' ? nativeBytes.toString() : urlBytes,
+      );
+    }
+    expect((await verifyStore(store)).checked).toBe(1);
+    expect(await readFile(join(root, '.gitignore'), 'utf8')).toBe('/asset_cache/\n/loa-resolution.json\n');
+  });
   it('keeps file: sources live and pull never reads, hashes, copies or requires them', async () => {
     await writeFile(join(root, 'chair.glb'), 'original');
     await run(['add', './chair.glb', '--as', 'chair']);
@@ -222,18 +238,20 @@ describe('asset manager executable', { timeout: 20_000 }, () => {
     expect(requests).toEqual([]);
     expect(await readdir(root)).not.toContain('store');
     expect(await readdir(root)).not.toContain('asset_cache');
-    expect(await readdir(root)).not.toContain('loa_assets');
   });
-  it('updates exact pins only with --latest and reports outdated aliases', async () => {
-    await run(['add', 'acme/models/chair', '--as', 'chair']);
-    latest = '2.0.0';
-    const outdated = await run(['outdated']);
-    expect(JSON.parse(outdated.stdout)).toEqual([{ alias: 'chair', current: '1.0.0', latest: '2.0.0' }]);
-    await run(['update', 'chair']);
-    expect((await loadProject(root)).lock!.importers['.']!.assets.chair).toMatchObject({ version: '1.0.0' });
-    await run(['update', 'chair', '--latest']);
-    expect((await loadProject(root)).manifests['.']!.assets.chair).toBe('acme/models/chair@2.0.0');
-  });
+  it.each(['chair', 'acme/models/chair'])(
+    'updates exact pins only with --latest and keeps full refs for alias %s',
+    async (alias) => {
+      await run(['add', 'acme/models/chair', '--as', alias]);
+      latest = '2.0.0';
+      const outdated = await run(['outdated']);
+      expect(JSON.parse(outdated.stdout)).toEqual([{ alias, current: '1.0.0', latest: '2.0.0' }]);
+      await run(['update', alias]);
+      expect((await loadProject(root)).lock!.importers['.']!.assets[alias]).toMatchObject({ version: '1.0.0' });
+      await run(['update', alias, '--latest']);
+      expect((await loadProject(root)).manifests['.']!.assets[alias]).toBe('acme/models/chair@2.0.0');
+    },
+  );
   it('removes manifest and lock bindings without deleting cached native bytes; prune then removes unused content', async () => {
     await run(['add', 'acme/models/chair', '--as', 'chair']);
     await run(['pull']);
@@ -259,7 +277,7 @@ describe('asset manager executable', { timeout: 20_000 }, () => {
     await expect(run(['pull'])).rejects.toThrow();
     expect((await verifyStore(store)).checked).toBe(0);
     expect(await readdir(join(store, 'v1/sha256', oid.slice(0, 2)))).toEqual([]);
-    expect(await readdir(root)).not.toContain('loa_assets');
+    expect(await readdir(root)).not.toContain('asset_cache');
   });
   it('detects damaged cached content and repairs it from the registry bytes', async () => {
     await run(['add', 'acme/models/chair', '--as', 'chair']);

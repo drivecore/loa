@@ -45,10 +45,22 @@ describe('project asset selections', () => {
     expect(project.lock!.importers['.']!.assets.chair).toMatchObject({ kind: 'loa', hash, version: '2.0.0', host });
     expect(api.resolve).toHaveBeenCalledTimes(1);
   });
-  it('uses a bare exact version when the canonical name is the alias', async () => {
+  it('keeps the full source ref when the canonical name is the alias', async () => {
     await addAsset('acme/models/chair', undefined, root, host, api);
-    expect((await loadProject(root)).manifests['.']!.assets).toEqual({ 'acme/models/chair': '2.0.0' });
+    expect((await loadProject(root)).manifests['.']!.assets).toEqual({
+      'acme/models/chair': 'acme/models/chair@2.0.0',
+    });
   });
+  it.each(['2.0.0', '2', '2.3', 'latest'])(
+    'rejects bare native version shorthand %s even with a canonical key',
+    async (value) => {
+      await manifest(root, { name: 'showroom', assets: { 'acme/models/chair': value } });
+      await expect(resolveProject(await loadProject(root), host, { api })).rejects.toThrow(
+        'Expected org/project/asset',
+      );
+      expect(api.resolve).not.toHaveBeenCalled();
+    },
+  );
   it('adds HTTP URLs without registry calls, hashes, or integrity fields', async () => {
     await addAsset('https://api.example.com/acme/models/chair@1.0.0', 'chair', root, host, api);
     const entry = (await loadProject(root)).lock!.importers['.']!.assets.chair;
@@ -154,7 +166,7 @@ describe('project asset selections', () => {
   it.each(['file:/tmp/a.glb', 'file:C:/a.glb', 'file:..\\a.glb', 'https://user:secret@example.com/a.glb'])(
     'rejects nonportable or credential-bearing source %s',
     async (value) => {
-      await expect(resolveSource('chair', value, host, api)).rejects.toThrow();
+      await expect(resolveSource(value, host, api)).rejects.toThrow();
     },
   );
 });
