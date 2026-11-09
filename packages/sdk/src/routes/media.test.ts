@@ -40,6 +40,17 @@ describe('Media API URL builders', () => {
       expect(url.href).toBe(`${host}/media/my-org/my-project/my-asset.webp?width=512&height=512`);
     });
 
+    it('builds a versioned JPEG XL conversion download URL', () => {
+      const url = getMediaUrl(client, {
+        params: { ...params, version: '1.2.3' },
+        format: 'jxl',
+        query: { download: true, cache: false },
+      });
+      expect(url.pathname).toBe('/media/my-org/my-project/my-asset@1.2.3.jxl');
+      expect(url.searchParams.get('download')).toBe('true');
+      expect(url.searchParams.get('cache')).toBe('false');
+    });
+
     it('builds envmap route for hdr', () => {
       const url = getMediaUrl(client, { params, format: 'hdr', query: { download: true } });
       expect(url.href).toBe(`${host}/media/my-org/my-project/my-asset.hdr?download=true`);
@@ -198,6 +209,7 @@ describe('versioned media references', () => {
         'step',
         'hdr',
         'exr',
+        'jxl',
         'ultrahdr',
       ] as const) {
         expect(decodeURIComponent(getMediaUrl(client, { params: selected, format }).pathname)).toContain(
