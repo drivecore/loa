@@ -16,7 +16,7 @@ export const command = defineCommand({
         default: 'remote' as const,
         description: 'Explicit asset loading mode',
       },
-      output: { type: 'string', description: 'Output JSON file (default: loa-resolution.json at workspace root)' },
+      output: { type: 'string', description: 'Output JSON file (default: asset-resolution.json at workspace root)' },
       'base-url': { type: 'string', default: '/', description: 'Public URL prefix used for local assets' },
     }),
   handler: async (argv) => {
@@ -24,7 +24,7 @@ export const command = defineCommand({
     const project = await loadProject();
     const lock = await resolveProject(project, (await getConfig(deps)).host, { frozen: true });
     const map = buildResolution(lock, { mode: argv.mode, baseUrl: argv.baseUrl });
-    const output = argv.output ? resolve(argv.output) : join(project.root, 'loa-resolution.json');
+    const output = argv.output ? resolve(argv.output) : join(project.root, 'asset-resolution.json');
     await atomicWrite(output, JSON.stringify(map, null, 2) + '\n');
     deps.logger.info(`Wrote ${output}`);
   },

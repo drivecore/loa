@@ -82,7 +82,7 @@ Ignore generated local state in Git:
 
 ```gitignore
 asset_cache/
-loa-resolution.json
+asset-resolution.json
 ```
 
 For CI, require a lockfile that already matches the manifests:
@@ -157,12 +157,12 @@ loa resolve --mode remote
 loa resolve --mode local
 ```
 
-This writes `loa-resolution.json` at the workspace root. Use `--output <file>` to choose another location or `--base-url <prefix>` to set the public URL prefix for local assets. The command requires a matching lockfile and does not re-resolve dependencies. Serve the JSON with your application and load it before the first asset request:
+This writes `asset-resolution.json` at the workspace root. Use `--output <file>` to choose another location or `--base-url <prefix>` to set the public URL prefix for local assets. The command requires a matching lockfile and does not re-resolve dependencies. Serve the JSON with your application and load it before the first asset request:
 
 ```ts
 import { loadLoaResolver } from '@landofassets/runtime';
 
-const assets = await loadLoaResolver('/loa-resolution.json');
+const assets = await loadLoaResolver('/asset-resolution.json');
 const chairUrl = assets.url('chair');
 ```
 

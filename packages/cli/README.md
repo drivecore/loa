@@ -52,10 +52,10 @@ Native refs are hash-verified and downloaded into a global store, then materiali
 | `loa update [alias] [--latest]`                                   | Re-resolve selectors, or update pins to latest                            |
 | `loa outdated`                                                    | Show native selections with newer versions                                |
 | `loa publish <file> --to <org/project/asset> --version <version>` | Publish an immutable version; server validates self-contained resources   |
-| `loa resolve --mode <mode>`                                       | Write `loa-resolution.json` from the lockfile                             |
+| `loa resolve --mode <mode>`                                       | Write `asset-resolution.json` from the lockfile                           |
 | `loa store <command>`                                             | Inspect and maintain the native global store                              |
 
-Ignore `asset_cache/` and generated `loa-resolution.json`; commit the manifest and lockfile. Only native assets have reproducible verified bytes. External URLs and live files remain mutable even with `--frozen-lockfile`.
+Ignore `asset_cache/` and generated `asset-resolution.json`; commit the manifest and lockfile. Only native assets have reproducible verified bytes. External URLs and live files remain mutable even with `--frozen-lockfile`.
 
 Use `@landofassets/runtime` to resolve aliases in an application and `@landofassets/runtime/vite` to serve or bundle local assets. The [asset manager overview](../website/docs/asset-manager.md) covers runtime integration, workspaces, deployment modes, and the source model.
 

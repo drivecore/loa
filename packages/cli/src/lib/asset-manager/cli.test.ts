@@ -188,12 +188,12 @@ describe('asset manager executable', { timeout: 20_000 }, () => {
     failDownloads = true;
     await run(['pull', '--frozen-lockfile'], { LOA_HOST: 'http://127.0.0.1:1' });
     await run(['resolve', '--mode', 'local']);
-    expect(JSON.parse(await readFile(join(root, 'loa-resolution.json'), 'utf8')).chair).toBe(
+    expect(JSON.parse(await readFile(join(root, 'asset-resolution.json'), 'utf8')).chair).toBe(
       `/${relativeAssetPath(entry)}`,
     );
     expect(requests).toEqual([]);
     await run(['resolve']);
-    expect(JSON.parse(await readFile(join(root, 'loa-resolution.json'), 'utf8')).chair).toBe(`${host}/files/${oid}`);
+    expect(JSON.parse(await readFile(join(root, 'asset-resolution.json'), 'utf8')).chair).toBe(`${host}/files/${oid}`);
   });
   it('does not fetch URL additions; pulls only into project cache, reusing until explicit refresh', async () => {
     await run(['add', `${host}/external.glb`, '--as', 'external']);
@@ -225,7 +225,7 @@ describe('asset manager executable', { timeout: 20_000 }, () => {
       );
     }
     expect((await verifyStore(store)).checked).toBe(1);
-    expect(await readFile(join(root, '.gitignore'), 'utf8')).toBe('/asset_cache/\n/loa-resolution.json\n');
+    expect(await readFile(join(root, '.gitignore'), 'utf8')).toBe('/asset_cache/\n/asset-resolution.json\n');
   });
   it('keeps file: sources live and pull never reads, hashes, copies or requires them', async () => {
     await writeFile(join(root, 'chair.glb'), 'original');
