@@ -149,7 +149,8 @@ afterEach(async () => {
   await rm(root, { recursive: true, force: true });
 });
 
-describe('asset manager executable', () => {
+// Each workflow launches several real CLI processes; shared CI runners need time for their startup.
+describe('asset manager executable', { timeout: 20_000 }, () => {
   it.each([true, false])(
     'publishes %s-new assets using authenticated APIs without changing the consuming manifest',
     async (newAsset) => {
